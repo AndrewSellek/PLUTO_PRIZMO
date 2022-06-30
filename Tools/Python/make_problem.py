@@ -150,7 +150,10 @@ class MakeProblem(object):
     for x in self.pluto_path:
       pf.InsertLine('include $(SRC)/' + x + 'makefile' + '\n',ipos)
       ipos = ipos + 1
-    
+
+    # Add chemistry
+    pf.InsertLine('include $(SRC)/Chemistry/makefile' + '\n',ipos)
+    ipos = ipos + 1    
 
     # Add particle specific module: CR, LP or DUST
     if (self.particles == 'PARTICLES_LP'):
