@@ -5,6 +5,14 @@
 VPATH        += $(SRC)/Chemistry
 INCLUDE_DIRS += -I$(SRC)/Chemistry
 
+# test if ifort is present
+wres = $(shell which ifort > /dev/null; echo $$?)
+ifeq "$(wres)" "0"
+	FC = ifort
+else
+	FC = gfortran
+endif
+
 CHEM_OBJ = chemistry.o
 #prizmo objects
 objs = opkda1.o
@@ -42,7 +50,7 @@ objs += prizmo_c.o
 OBJ     += $(CHEM_OBJ) $(objs)
 HEADERS += chemistry.h mod_defs.h
 
-LDFLAGS += -lifcore -limf
+LDFLAGS += -lifcore -limf -lsvml -lintlc -ldl
 
 $(CHEM_OBJ):  $(HEADERS)
 
