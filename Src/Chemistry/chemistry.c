@@ -17,6 +17,7 @@ void initialize_Microphysics(Grid *grid)
  *
  *********************************************************************** */
 {
+    int n;
     irradiation.neighbour.receive_rank = -1;
     irradiation.neighbour.send_rank = -1;
 
@@ -26,7 +27,7 @@ void initialize_Microphysics(Grid *grid)
     irradiation.data_buffer = ARRAY_1D(NX2*NX3, double);
     irradiation.column_density_offset = ARRAY_1D(NX2*NX3, double);
 
-    for(int n = 0; n < NX2 * NX3; ++n)
+    for(n = 0; n < NX2 * NX3; ++n)
     {
         irradiation.column_density_offset[n] = 0.;
     }
