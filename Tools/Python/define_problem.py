@@ -259,15 +259,15 @@ class DefineProblem(object):
     """
     self.entries_HD = ['DUST_FLUID','EOS', 'ENTROPY_SWITCH',
                        'THERMAL_CONDUCTION', 'VISCOSITY',
-                       'ROTATING_FRAME']
+                       'ROTATING_FRAME', 'CHEMISTRY', 'DISABLE_HYDRO']
     self.default_HD = ['NO','IDEAL', 'NO',
-                       'NO',    'NO',
-                       'NO']
+                       'NO', 'NO',
+                       'NO', 'NO', 'NO']
     self.options_HD = [['NO','YES'],['IDEAL','PVTE_LAW','ISOTHERMAL'],
                        ['NO','SELECTIVE','ALWAYS','CHOMBO_REGRID'],
                        ['NO','EXPLICIT','SUPER_TIME_STEPPING','RK_LEGENDRE'],
                        ['NO','EXPLICIT','SUPER_TIME_STEPPING','RK_LEGENDRE'],
-                       ['NO','YES']]
+                       ['NO','YES'],['NO','YES'],['NO','YES']]
   
     if self.flag_dict['WITH-CHOMBO']: # Chombo does not support STS at the
                                       # moment. Only explicit allowed with Chombo
