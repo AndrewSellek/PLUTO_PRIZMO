@@ -17,12 +17,7 @@
 
 extern void prizmo_get_rho_c(double *, double *);
 extern void prizmo_n2frac_c(double *, double *);
-extern void prizmo_set_radial_ncol_h2_c(double *);
-extern void prizmo_set_radial_ncol_co_c(double *);
-extern void prizmo_set_vertical_ncol_co_c(double *);
-extern void prizmo_evolve_rho_c(double *, double *, double *, double *, double *);
-extern void prizmo_frac2n_c(double *, double *, double *);
-extern void prizmo_rt_rho_c(double *, double *, double *, double *, double *);
+extern void prizmo_set_d2g_c(double);
 
 /* ********************************************************************* */
 void Init (double *us, double x1, double x2, double x3)
@@ -39,6 +34,8 @@ void Init (double *us, double x1, double x2, double x3)
   #endif
 
   us[VX1] = 0.0;
+
+  prizmo_set_d2g_c(1.e-2);
 
   NTRACER_LOOP(nv) {
     n[nv-TRC] = 0.;
@@ -75,13 +72,7 @@ void InitDomain (Data *d, Grid *grid)
  *
  *********************************************************************** */
 {
-  int i,j,k,n;
   read_jflux();
-  for (n=0; n<3; n++){
-    DOM_LOOP(k,j,i){
-      irradiation.column_density[n][k][j][i] = 0.0;
-    }
-  }
 }
 
 /* ********************************************************************* */

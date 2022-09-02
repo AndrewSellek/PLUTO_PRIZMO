@@ -5,16 +5,18 @@ extern void prizmo_set_radial_ncol_co_c(double *);
 extern void prizmo_set_vertical_ncol_co_c(double *);
 extern void prizmo_evolve_rho_c(double *, double *, double *, double *, double *);
 extern void prizmo_frac2n_c(double *, double *, double *);
-extern void prizmo_n2frac_c(double *, double *, double *);
 extern void prizmo_rt_rho_c(double *, double *, double *, double *, double *);
 
 /* ********************************************************************* */
 void initialize_Microphysics(Grid *grid)
 /*
+ * Initialize the arrays for the column density and radiation flux
+ * calculation, and find neighbor domains for parallel calculation.
+ *
+ * \param[in]     grid    pointer to array of Grid structures.
  *
  *********************************************************************** */
 {
-    int n;
     irradiation.neighbour.receive_rank = -1;
     irradiation.neighbour.send_rank = -1;
 
@@ -23,9 +25,8 @@ void initialize_Microphysics(Grid *grid)
     irradiation.jflux0 = ARRAY_1D(NPHOTO, double);
     irradiation.data_buffer = ARRAY_1D(NX2*NX3, double);
     irradiation.column_density_offset = ARRAY_1D(NX2*NX3, double);
-    irradiation.jflux_buffer = ARRAY_1D(NPHOTO*NX1*NX2*NX3, double);
 
-    for(n = 0; n < NX2 * NX3; ++n)
+    for(int n = 0; n < NX2 * NX3; ++n)
     {
         irradiation.column_density_offset[n] = 0.;
     }
@@ -36,6 +37,7 @@ void initialize_Microphysics(Grid *grid)
 /*********************************************************************** */
 void cleanup_Microphysics()
 /*
+ * Free arrays used for column density and radiation flux calculation.
  *
  *********************************************************************** */
 {
@@ -44,68 +46,82 @@ void cleanup_Microphysics()
     FreeArray1D((void *) irradiation.jflux0);
     FreeArray1D((void *) irradiation.data_buffer);
     FreeArray1D((void *) irradiation.column_density_offset);
-    FreeArray1D((void *) irradiation.jflux_buffer);
 }
 
 /* ********************************************************************* */
 void Chemistry(Data_Arr v, double dt, Grid *grid)
-/*!
- *  Chemistry
+/*
+ * Calculate the chemical abundances in the computational domain.
+ *
+ * \param[in]     v       Data Array containing conservative variables
+ * \param[in]     dt      time increment
+ * \param[in]     grid    pointer to array of Grid structures. 
+ *
  *********************************************************************** */
 {
-  int i,j,k,n;
-  double x[NTRACER];
-  double Tgas, Tdust, dx;
-  double dt_s;
-  double rho, T;
+    int i, j, k, n;
+    double abundance[NTRACER];
+    double T_cgs, dt_cgs, density_cgs;
 
-  DOM_LOOP(k,j,i){
-    rho = v[RHO][k][j][i]*UNIT_DENSITY;
-    Tgas = v[PRS][k][j][i]/v[RHO][k][j][i]*(KELVIN*g_inputParam[MU]);
+    DOM_LOOP(k, j, i){
+        density_cgs = v[RHO][k][j][i]*UNIT_DENSITY;
+        T_cgs = v[PRS][k][j][i]/v[RHO][k][j][i]*(KELVIN*g_inputParam[MU]);
+        dt_cgs = dt*UNIT_LENGTH/UNIT_VELOCITY;
 
-    NTRACER_LOOP(n) x[n-TRC] = v[n][k][j][i];
+        NTRACER_LOOP(n) abundance[n-TRC] = v[n][k][j][i];
  
-    dt_s = dt*UNIT_LENGTH/UNIT_VELOCITY;
-    dx = grid->dx[IDIR][i]*UNIT_LENGTH;
+        // set incoming radial column density
+        prizmo_set_radial_ncol_h2_c(&irradiation.column_density[1][k][j][i]);
+        prizmo_set_radial_ncol_co_c(&irradiation.column_density[2][k][j][i]);
 
-    // set incoming column density to the cell
-    prizmo_set_radial_ncol_h2_c(&irradiation.column_density[1][k][j][i]);
-    prizmo_set_radial_ncol_co_c(&irradiation.column_density[2][k][j][i]);
+        // set excaping vertical column density
+        prizmo_set_vertical_ncol_co_c(&irradiation.column_density[2][k][j][i]);
 
-    // set excaping column density from the cell
-    prizmo_set_vertical_ncol_co_c(&irradiation.column_density[2][k][j][i]);
+        // update chemical abundances, temperature and radiation flux
+        prizmo_evolve_rho_c(abundance, &density_cgs, &T_cgs, 
+			irradiation.jflux[k][j][i], &dt_cgs);
 
-    // CALL PRIZMO
-    prizmo_evolve_rho_c(x, &rho, &Tgas, irradiation.jflux[k][j][i], &dt_s);
+        v[PRS][k][j][i] = v[RHO][k][j][i]*T_cgs/(KELVIN*g_inputParam[MU]);
 
-    v[PRS][k][j][i] = v[RHO][k][j][i]*Tgas/(KELVIN*g_inputParam[MU]);
-
-    NTRACER_LOOP(n) v[n][k][j][i] = x[n-TRC];
-  }
+        NTRACER_LOOP(n) v[n][k][j][i] = abundance[n-TRC];
+    }
 }
 
 /*********************************************************************** */
 void read_jflux()
 /*
+ * Import radiation flux at 1 au from input file
  *
  *********************************************************************** */
 {
-  FILE *fout;
-  double Jscale = 1.e1;
-  int n;
+    //TODO: verify that the file exist and print en error statement otherwise
+    FILE *fout;
+    double Jscale = 1.e1;
+    int n;
 
-  // load radiation at 1 AU
-  fout = fopen("runtime_data/radiation_field.dat", "r");
-  for (n=0; n<NPHOTO; n++){
-    fscanf(fout, "%le", &irradiation.jflux0[n]);
-    irradiation.jflux0[n] *= 2.*CONST_PI*Jscale;
-  }
-  fclose(fout);
+    // load radiation at 1 AU
+    fout = fopen("runtime_data/radiation_field.dat", "r");
+    NPHOTO_LOOP(n) {
+        fscanf(fout, "%le", &irradiation.jflux0[n]);
+        irradiation.jflux0[n] *= 2.*CONST_PI*Jscale;
+    }
+    fclose(fout);
 }
 
 /*********************************************************************** */
-void find_CommunicationNeighbour(int current_rank, LocalDomainInfo *domain_info_array, int nproc, CommunicationNeighbour* cn)
+void find_CommunicationNeighbour(int current_rank, 
+		LocalDomainInfo *domain_info_array, int nproc, 
+		CommunicationNeighbour* cn)
 /*
+ * Find all the neighbour computational domains the current rank has to send
+ * and receive data
+ *
+ * \param[in]     current_rank       integer index of the current rank
+ * \param[in]     domain_info_array  structure defining the boundaries of the current
+ *                                   computational domain
+ * \param[in]     nproc              total number of processors
+ * \param[out]    cn                 structure containing the indices of processors
+ *                                   the current rank has to communicate with
  *
  *********************************************************************** */
 {
@@ -134,6 +150,10 @@ void find_CommunicationNeighbour(int current_rank, LocalDomainInfo *domain_info_
 /************************************************************************ */
 void find_CommunicationNeighbours(Grid *grid)
 /*
+ * Find the neighbour computational domain for the whole grid, distinguishing
+ * between domains that are receiving and sending data to the other ones.
+ *
+ * \param[in]     grid    pointer to array of Grid structures.
  *
  ************************************************************************ */
 {
@@ -193,40 +213,53 @@ void find_CommunicationNeighbours(Grid *grid)
 /*********************************************************************** */
 void calculate_Attenuation(Data_Arr v, Grid *grid)
 /*
+ * Calculate radiation attenuation in the whole domain calling PRIZMO.
+ * 
+ * WARNING: this calculation needs to be run in serial over the radial 
+ * direction since each domain has to know the attenutation at its inner 
+ * radial boundary before starting.
+ *
+ * TODO: restrict this calculation only for spherical coordinates.
+ *
+ * \param[in]     v       Data Array containing conservative variables
+ * \param[in]     grid    pointer to array of Grid structures
  *
  *********************************************************************** */
 {
     int k, j, i, l, n, rank;
-    double density, Tgas, dr;
-    double x[NTRACER];
+    double density_cgs, temperature_cgs, dr_cgs;
+    double abundance[NTRACER];
     double jflux[NPHOTO];
     MPI_Status status;
  
     for (rank=0; rank<grid->nproc[IDIR]; rank++){
       if(prank == rank){
-        NTRACER_LOOP(l) x[l-TRC] = 0.;
-
-        KTOT_LOOP(k){
-          JTOT_LOOP(j){
+        KDOM_LOOP(k){
+          JDOM_LOOP(j){
             if(rank == 0){
-              //initialize radiation attenuation
-              for (n=0; n<NPHOTO; n++){
+              //initialize radiation fluxes
+              NPHOTO_LOOP(n) {
                 jflux[n] = irradiation.jflux0[n];
-                irradiation.jflux[k][j][0][n] = irradiation.jflux0[n];
+                irradiation.jflux[k][j][IBEG][n] = irradiation.jflux0[n];
               }
 	    }
-	    else MPI_Recv(jflux, NPHOTO, MPI_DOUBLE, rank-1, 0, MPI_COMM_WORLD, &status);
+	    else {
+              MPI_Recv(jflux, NPHOTO, MPI_DOUBLE, rank-1, 0, MPI_COMM_WORLD, &status);
+	      NPHOTO_LOOP(n) irradiation.jflux[k][j][IBEG][n] = jflux[n];
+	    }
 
-            for (i = 0; i < IEND; i++){
-                //calculate radiation attenutation contribution
-                density = v[RHO][k][j][i] * UNIT_DENSITY;
-                NTRACER_LOOP(l) x[l-TRC] = v[l][k][j][i];
-                dr = grid->dx[IDIR][i]*UNIT_LENGTH;
-                Tgas = v[PRS][k][j][i]/v[RHO][k][j][i]*(KELVIN*g_inputParam[MU]);
-                prizmo_rt_rho_c(x, &density, &Tgas, jflux, &dr);
-                for (n=0; n<NPHOTO; n++){
-                    irradiation.jflux[k][j][i+1][n] = jflux[n];
-                }
+            IDOM_LOOP(i){
+                density_cgs = v[RHO][k][j][i] * UNIT_DENSITY;
+                dr_cgs = grid->dx[IDIR][i]*UNIT_LENGTH;
+                temperature_cgs = v[PRS][k][j][i]/v[RHO][k][j][i]*(KELVIN*g_inputParam[MU]);
+		
+		NTRACER_LOOP(l) abundance[l-TRC] = v[l][k][j][i];
+		
+		//calculate radiation attenuation at the radial cell i
+                prizmo_rt_rho_c(abundance, &density_cgs, &temperature_cgs, jflux, &dr_cgs);
+		
+		//assign attenuated radiation flux to the next radial cell
+                NPHOTO_LOOP(n) irradiation.jflux[k][j][i+1][n] = jflux[n];
             }
 	    if (rank != grid->nproc[IDIR]-1) MPI_Send(jflux, NPHOTO, MPI_DOUBLE, rank+1, 0, MPI_COMM_WORLD);
           }
@@ -240,45 +273,55 @@ void calculate_Attenuation(Data_Arr v, Grid *grid)
 /*********************************************************************** */
 void calculate_ColumnDensity_perDomain(Data_Arr v, Grid *grid, int val)
 /*
+ * Calculate the total column density or for a specific species in the
+ * local computational domain, and send the 
+ *
+ * \param[in]     v       Data Array containing conservative variables
+ * \param[in]     grid    pointer to array of Grid structures
+ * \param[in]     val     integer define which column density we are calculating
+ *                        (0 = total, 1= H2, 2=CO)
  *
  *********************************************************************** */
 {
     int k, j, i, l;
     double column_density;
-    double density, dr;
+    double density_cgs, dr_cgs;
     double mpart = g_inputParam[GAMMA_EOS]*CONST_amu;
-    double x[NTRACER], n[NTRACER];
+    double abundance[NTRACER], number_density[NTRACER];
     MPI_Status status;
 
     NTRACER_LOOP(l){
-        x[l-TRC] = 0.;
-        n[l-TRC] = 0.;
+        abundance[l-TRC] = 0.;
+        number_density[l-TRC] = 0.;
     }
 
+    // Calculate column density in the current computational domain
     KDOM_LOOP(k){
         JDOM_LOOP(j){
-            //initialize column density
+            //initialize column density for each radial sweep
             column_density = 0.0;
             irradiation.column_density[val][k][j][IBEG] = column_density;
 
             IDOM_LOOP(i){
-                //calculate column density contribution in the current domain
-                density = v[RHO][k][j][i] * UNIT_DENSITY;
-                NTRACER_LOOP(l) x[l-TRC] = v[l][k][j][i];
-                prizmo_frac2n_c(x, &density, n);
-                dr = grid->dx[IDIR][i]*UNIT_LENGTH;
-                if(val == 0) {
-                    column_density += density/mpart*dr;
+                density_cgs = v[RHO][k][j][i] * UNIT_DENSITY;
+		dr_cgs = grid->dx[IDIR][i]*UNIT_LENGTH;
+
+                NTRACER_LOOP(l) abundance[l-TRC] = v[l][k][j][i];
+                prizmo_frac2n_c(abundance, &density_cgs, number_density);
+                
+		if (val == 0) {
+                    column_density += density_cgs/mpart*dr_cgs;
                 } else if (val == 1) {
-                    column_density += n[IDX_CHEM_H2-TRC] * dr;
+                    column_density += number_density[IDX_CHEM_H2-TRC] * dr_cgs;
                 } else {
-                    column_density += n[IDX_CHEM_CO-TRC] * dr;
+                    column_density += number_density[IDX_CHEM_CO-TRC] * dr_cgs;
                 }
                 irradiation.column_density[val][k][j][i+1] = column_density;
             }
         }
     }
 
+    // Calculate the column density offset for each processor in density_offset
     if(irradiation.neighbour.receive_rank != irradiation.neighbour.send_rank)//check if more than one process is in the communicator (nproc > 1)
     {
         if(irradiation.neighbour.receive_rank == -1 && irradiation.neighbour.send_rank != -1) //no neighbor in between the star and the current domain
@@ -292,11 +335,11 @@ void calculate_ColumnDensity_perDomain(Data_Arr v, Grid *grid, int val)
                     l++;
                 }
             }
-            MPI_Send(irradiation.data_buffer,NX2*NX3,MPI_DOUBLE,irradiation.neighbour.send_rank,0,MPI_COMM_WORLD);
+            MPI_Send(irradiation.data_buffer, NX2*NX3, MPI_DOUBLE, irradiation.neighbour.send_rank, 0, MPI_COMM_WORLD);
         }
         else
         {
-            MPI_Recv(irradiation.column_density_offset ,NX2*NX3, MPI_DOUBLE, irradiation.neighbour.receive_rank, 0, MPI_COMM_WORLD, &status);
+            MPI_Recv(irradiation.column_density_offset, NX2*NX3, MPI_DOUBLE, irradiation.neighbour.receive_rank, 0, MPI_COMM_WORLD, &status);
 
             l = 0;
             i = IEND+1;
@@ -309,7 +352,7 @@ void calculate_ColumnDensity_perDomain(Data_Arr v, Grid *grid, int val)
 
             if(irradiation.neighbour.send_rank != -1)
             {
-                MPI_Send(irradiation.data_buffer,NX2*NX3,MPI_DOUBLE,irradiation.neighbour.send_rank,0,MPI_COMM_WORLD);
+                MPI_Send(irradiation.data_buffer, NX2*NX3, MPI_DOUBLE, irradiation.neighbour.send_rank, 0, MPI_COMM_WORLD);
             }
 
         }
@@ -320,28 +363,30 @@ void calculate_ColumnDensity_perDomain(Data_Arr v, Grid *grid, int val)
 /*********************************************************************** */
 void calculate_ColumnDensity(Data_Arr v, Grid *grid)
 /*
+ * Calculate the column density in the whole computational domain.
+ *
+ * \param[in]     v       Data Array containing conservative variables
+ * \param[in]     grid    pointer to array of Grid structures
  *
  *********************************************************************** */
 {
-        int k, j, i, l, n;
+    int k, j, i, l, n;
 
-        for (l=0; l<3; l++)
-        {
-                calculate_ColumnDensity_perDomain(v, grid, l);
+    for (l=0; l<3; l++)
+    {
+	// Calculate column densities in each computational domain
+        calculate_ColumnDensity_perDomain(v, grid, l);
 
-                n = 0;
-                for (k = KBEG; k <= KEND; k++)
-                {
-                        for (j = JBEG; j <= JEND; j++)
-                        {
-                                for (i = IBEG; i <= IEND; i++)
-                                {
-                                        irradiation.column_density[l][k][j][i] += irradiation.column_density_offset[n];
-                                }
-                                n++;
-                        }
-
+	// Add the column density offsets from previous radial domains
+        n = 0;
+        KDOM_LOOP(k){
+            JDOM_LOOP(j){
+                IDOM_LOOP(i){
+                    irradiation.column_density[l][k][j][i] += irradiation.column_density_offset[n];
                 }
+                n++;
+            }
         }
+    }
 }
 
