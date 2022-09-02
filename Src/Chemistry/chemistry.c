@@ -92,10 +92,11 @@ void read_jflux()
 {
   FILE *fout;
   double Jscale = 1.e1;
+  int n;
 
   // load radiation at 1 AU
   fout = fopen("runtime_data/radiation_field.dat", "r");
-  for (int n=0; n<NPHOTO; n++){
+  for (n=0; n<NPHOTO; n++){
     fscanf(fout, "%le", &irradiation.jflux0[n]);
     irradiation.jflux0[n] *= 2.*CONST_PI*Jscale;
   }

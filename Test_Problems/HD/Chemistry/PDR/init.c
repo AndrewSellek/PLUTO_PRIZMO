@@ -77,7 +77,7 @@ void InitDomain (Data *d, Grid *grid)
 {
   int i,j,k,n;
   read_jflux();
-  for (int n=0; n<3; n++){
+  for (n=0; n<3; n++){
     DOM_LOOP(k,j,i){
       irradiation.column_density[n][k][j][i] = 0.0;
     }
