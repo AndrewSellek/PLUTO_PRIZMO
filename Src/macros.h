@@ -172,7 +172,10 @@ http://stackoverflow.com/questions/11303135/broadcast-message-for-all-processes-
 
   #ifdef PARALLEL
    #define QUIT_PLUTO(e_code)                 \
-          {printLog ("! Abort\n");            \
+          {char e_log[] = "! Abort in ";      \
+           strcat(e_log, __func__);           \
+           strcat(e_log,"\n");                \
+           printLog (e_log);                  \
            LogFileFlush();                    \
            MPI_Abort(MPI_COMM_WORLD, e_code); \
            MPI_Finalize();                    \
