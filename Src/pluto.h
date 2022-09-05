@@ -870,6 +870,7 @@ extern double g_maxCoolingRate, g_minCoolingTemp;
 extern double g_smallDensity, g_smallPressure;
 
 extern double g_time, g_dt;
+double g_mu, g_nu;
 extern double g_maxMach;
 #if ROTATING_FRAME
  extern double g_OmegaZ;

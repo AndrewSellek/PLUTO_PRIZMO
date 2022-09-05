@@ -66,7 +66,7 @@ void Chemistry(Data_Arr v, double dt, Grid *grid)
 
     DOM_LOOP(k, j, i){
         density_cgs = v[RHO][k][j][i]*UNIT_DENSITY;
-        temperature_cgs = v[PRS][k][j][i]/v[RHO][k][j][i]*(KELVIN*g_inputParam[MU]);
+        temperature_cgs = v[PRS][k][j][i]/v[RHO][k][j][i]*(KELVIN*g_inputParam[G_MU]);
         dt_cgs = dt*UNIT_LENGTH/UNIT_VELOCITY;
 
         NTRACER_LOOP(n) abundance[n-TRC] = v[n][k][j][i];
@@ -82,7 +82,7 @@ void Chemistry(Data_Arr v, double dt, Grid *grid)
         prizmo_evolve_rho_c(abundance, &density_cgs, &temperature_cgs, 
 			irradiation.jflux[k][j][i], &dt_cgs);
 
-        v[PRS][k][j][i] = v[RHO][k][j][i]*temperature_cgs/(KELVIN*g_inputParam[MU]);
+        v[PRS][k][j][i] = v[RHO][k][j][i]*temperature_cgs/(KELVIN*g_inputParam[G_MU]);
 
         NTRACER_LOOP(n) v[n][k][j][i] = abundance[n-TRC];
     }
@@ -252,7 +252,7 @@ void calculate_Attenuation(Data_Arr v, Grid *grid)
             IDOM_LOOP(i){
                 density_cgs = v[RHO][k][j][i] * UNIT_DENSITY;
                 dr_cgs = grid->dx[IDIR][i]*UNIT_LENGTH;
-                temperature_cgs = v[PRS][k][j][i]/v[RHO][k][j][i]*(KELVIN*g_inputParam[MU]);
+                temperature_cgs = v[PRS][k][j][i]/v[RHO][k][j][i]*(KELVIN*g_inputParam[G_MU]);
 		
 		NTRACER_LOOP(l) abundance[l-TRC] = v[l][k][j][i];
 		
