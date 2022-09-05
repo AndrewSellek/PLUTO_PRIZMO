@@ -730,6 +730,7 @@ typedef double ****Data_Arr;
 #define NIONS_LOOP(n)     for ((n) = NFLX; (n) < (NFLX+NIONS); (n)++)
 #define NTRACER_LOOP(n)   for ((n) = TRC;  (n) < (TRC+NTRACER); (n)++)
 #define NSCL_LOOP(n)      for ((n) = NFLX; (n) < (NFLX+NSCL); (n)++)
+#define NPHOTO_LOOP(n)    for ((n) = 0; (n) < (NPHOTO); (n)++)
 
 #if DUST_FLUID == YES
   #include "Dust_Fluid/dust_fluid.h"            /* Dust header file */
@@ -759,6 +760,10 @@ typedef double ****Data_Arr;
 
 #if (PARTICLES != NO)                   /* Particle Header File */
  #include "Particles/particles.h"
+#endif
+
+#if (CHEMISTRY != NO)                   /* Chemistry Header File */
+ #include "Chemistry/chemistry.h"
 #endif
 
 #ifdef SHEARINGBOX
@@ -865,6 +870,7 @@ extern double g_maxCoolingRate, g_minCoolingTemp;
 extern double g_smallDensity, g_smallPressure;
 
 extern double g_time, g_dt;
+double g_mu, g_nu;
 extern double g_maxMach;
 #if ROTATING_FRAME
  extern double g_OmegaZ;

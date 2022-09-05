@@ -3,6 +3,7 @@ import sys
 import shutil
 import subprocess
 import menu
+import time
 import pluto_files_IO as pfIO
 from define_problem import DefineProblem
 
@@ -36,6 +37,8 @@ class MakeProblem(object):
     self.pluto_path = Dp.pluto_path
     self.chomboflag = Dp.flag_dict['WITH-CHOMBO']
     self.particles  = Dp.default[Dp.entries.index('PARTICLES')]
+    self.chemistry  = Dp.default_HD[Dp.entries_HD.index('CHEMISTRY')]
+    self.viscosity  = Dp.default_HD[Dp.entries_HD.index('VISCOSITY')]
 
     try: 
       len(Dp.kromeoptstr)
@@ -152,8 +155,14 @@ class MakeProblem(object):
       ipos = ipos + 1
 
     # Add chemistry
-    pf.InsertLine('include $(SRC)/Chemistry/makefile' + '\n',ipos)
-    ipos = ipos + 1    
+    if (self.chemistry == 'YES'):
+        pf.InsertLine('include $(SRC)/Chemistry/makefile' + '\n',ipos)
+        ipos = ipos + 1    
+
+    # Add viscosity
+    if (self.viscosity == 'YES'):
+        pf.InsertLine('include $(SRC)/Viscosity/makefile' + '\n',ipos)
+        ipos = ipos + 1    
 
     # Add particle specific module: CR, LP or DUST
     if (self.particles == 'PARTICLES_LP'):

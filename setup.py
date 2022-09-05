@@ -42,7 +42,7 @@ def PlutoInterface(pluto_dir, do_auto_update = False):
       MakeProblem(work_dir, pluto_dir, 0, 1)
     
     if interface_optval == interface_opts[1]:  #  Change makefile
-      MakeProblem(work_dir, pluto_dir, 1, 0)
+      MakeProblem(work_dir, pluto_dir, 0, 0)
 
     if interface_optval == interface_opts[2]:  #  Auto-update 
       menu.Prompt('Press Enter to Update '+work_dir)

@@ -77,6 +77,12 @@ void Initialize(Data *data, Runtime *runtime, Grid *grid, cmdLine *cmd_line)
   MPI_Datatype Float_Vect_type;
   #endif
 
+  //#ifdef PARALLEL
+  //LogFileClose();
+  //MPI_Barrier (MPI_COMM_WORLD);
+  //LogFileOpen (runtime->log_dir, "a");
+  //#endif
+
 /* ----------------------------------------------
    1. Parallel decomposition
    ---------------------------------------------- */

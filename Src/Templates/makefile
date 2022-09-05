@@ -86,7 +86,7 @@ pluto: $(OBJ)
 	$(CC) $(CFLAGS) $(INCLUDE_DIRS) $<
 
 clean:
-	@rm -f	*.o
+	@rm -f	*.o *.mod *__genmod.f90
 	@echo make clean: done
 
 # ---------------------------------------------------------
