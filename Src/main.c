@@ -73,7 +73,6 @@ int main (int argc, char *argv[])
 /* --------------------------------------------------------
    0. Initialize environment
    -------------------------------------------------------- */
-  print ("> Using this one!... \n\n");  
 
 #ifdef PARALLEL
   AL_Init (&argc, &argv);
@@ -85,7 +84,6 @@ int main (int argc, char *argv[])
 /* --------------------------------------------------------
    0a. Parse command line option & read input file
    -------------------------------------------------------- */
-  print ("> Begin 0a... \n\n");  
 
   ParseCmdLineArgs (argc, argv, input_file, &cmd_line);
   if (prank == 0) RuntimeSetup (&runtime, &cmd_line, input_file);
@@ -97,7 +95,6 @@ int main (int argc, char *argv[])
 /* --------------------------------------------------------
    0b. Open log file for the first time
    -------------------------------------------------------- */
-  print ("> Begin 0b... \n\n");  
 
   if (cmd_line.restart == NO && cmd_line.h5restart == NO){
     LogFileOpen (runtime.log_dir, "w");
@@ -110,7 +107,6 @@ int main (int argc, char *argv[])
    0c. Initialize parallel environment, grid, memory
        allocation.
    -------------------------------------------------------- */
-  print ("> Begin 0c... \n\n");  
 
   data.Dts = &Dts;
   Initialize (&data, &runtime, grd, &cmd_line);
@@ -118,7 +114,6 @@ int main (int argc, char *argv[])
 /* --------------------------------------------------------
    0d. Initialize members of timeStep structure
    -------------------------------------------------------- */
-  print ("> Begin 0d... \n\n");  
 
   Dts.cmax      = ARRAY_1D(NMAX_POINT, double);
   Dts.invDt_hyp = 0.0;
@@ -140,12 +135,20 @@ int main (int argc, char *argv[])
 #endif
 
   g_stepNumber = 0;
+
+/* --------------------------------------------------------
+   0f. Initialize chemistry
+   ----------------------------------------------------- */
+
+#if CHEMISTRY != NO
+  printLog ("> Initialize PRIZMO... \n\n");  
+  prizmo_init_c();
+#endif
   
 /* --------------------------------------------------------
    0e. Check if restart is necessary. 
        If not, write initial condition to disk.
    ------------------------------------------------------- */
-  print ("> Begin 0e... \n\n");  
   
   if (cmd_line.restart == YES) {
     RestartFromFile (&data, &runtime, cmd_line.nrestart, DBL_OUTPUT, grd);
@@ -162,17 +165,7 @@ int main (int argc, char *argv[])
   }
 
   if (cmd_line.maxsteps == 0) last_step = 1;
-  print ("> Starting computation... \n\n");  
-
-/* --------------------------------------------------------
-   0f. Initialize chemistry
-   ----------------------------------------------------- */
-  print ("> Begin 0f... \n\n");  
-
-#if CHEMISTRY != NO
-  print ("> Initialize PRIZMO... \n\n");  
-  prizmo_init_c();
-#endif
+  printLog ("> Starting computation... \n\n");  
 
 /* =====================================================================
    1.  M A I N      L O O P      S T A R T S      H E R E
