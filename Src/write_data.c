@@ -426,6 +426,7 @@ BOV_Header(output, filename);
     time(&tend);
     print ("  [%5.2f sec ]\n",difftime(tend,tbeg));
   }
+  LogFileFlush();
   #endif
 
 }

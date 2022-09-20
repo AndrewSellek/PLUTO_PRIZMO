@@ -453,7 +453,7 @@
   #define SHOCK_FLATTENING     NO
 #endif
 
-#ifndef SHOW_TIMINIG
+#ifndef SHOW_TIMING
   #define SHOW_TIMING          NO
 #endif
 
