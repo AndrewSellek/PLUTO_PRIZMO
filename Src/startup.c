@@ -257,7 +257,11 @@ void Startup (Data *d, Grid *grid)
    5. Set boundary conditions.
    ------------------------------------------------------ */
 
+  printLog("> Initial calculation of column density and attenuation...");
+  LogFileFlush();
   Boundary (d, -1, grid);
+  printLog("complete\n");
+  LogFileFlush();
 
 /* --------------------------------------------------------
    6. Compute cell-centered magnetic field by averaging

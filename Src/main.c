@@ -102,6 +102,7 @@ int main (int argc, char *argv[])
     LogFileOpen (runtime.log_dir, "a");
   }
   ShowConfig  (argc, argv, input_file);
+  LogFileFlush();
 
 /* --------------------------------------------------------
    0c. Initialize parallel environment, grid, memory
@@ -141,7 +142,8 @@ int main (int argc, char *argv[])
    ----------------------------------------------------- */
 
 #if CHEMISTRY != NO
-  printLog ("> Initialize PRIZMO... \n\n");  
+  printLog ("> Initialize PRIZMO... \n\n"); 
+  LogFileFlush(); 
   prizmo_init_c();
 #endif
 
