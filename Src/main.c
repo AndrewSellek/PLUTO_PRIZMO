@@ -144,7 +144,7 @@ int main (int argc, char *argv[])
   printLog ("> Initialize PRIZMO... \n\n");  
   prizmo_init_c();
 #endif
-  
+
 /* --------------------------------------------------------
    0e. Check if restart is necessary. 
        If not, write initial condition to disk.
@@ -284,6 +284,7 @@ int main (int argc, char *argv[])
     #endif
 #else
     g_dt = 1.1*g_dt;
+    //if (g_dt > 0.1) g_dt = 0.1;	! Experiment with capping timestep
 #endif
     g_stepNumber++;
     first_step = 0;
@@ -386,6 +387,7 @@ int Integrate (Data *d, timeStep *Dts, Grid *grid)
   DIM_LOOP(nv) TOT_LOOP(k,j,i) Ess0[nv][k][j][i] = d->Vs[EX1s+nv][k][j][i];
   #endif
   #endif
+
 #endif
 
 /* --------------------------------------------------------

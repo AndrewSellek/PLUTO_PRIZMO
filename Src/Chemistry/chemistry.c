@@ -3,7 +3,7 @@
 extern void prizmo_set_radial_ncol_h2_c(double *);
 extern void prizmo_set_radial_ncol_co_c(double *);
 extern void prizmo_set_vertical_ncol_co_c(double *);
-extern void prizmo_evolve_rho_c(double *, double *, double *, double *, double *);
+extern void prizmo_evolve_rho_c(double *, double *, double *, double *, double *, int *);
 extern void prizmo_frac2n_c(double *, double *, double *);
 extern void prizmo_rt_rho_c(double *, double *, double *, double *, double *);
 
@@ -61,6 +61,7 @@ void Chemistry(Data_Arr v, double dt, Grid *grid)
  *********************************************************************** */
 {
     int i, j, k, n;
+    int verboseChem=0, prankPrint=-1, kPrint=-1, jPrint=-1, iPrint=-1;
     double abundance[NTRACER];
     double temperature_cgs, dt_cgs, density_cgs;
 
@@ -70,21 +71,49 @@ void Chemistry(Data_Arr v, double dt, Grid *grid)
         dt_cgs = dt*UNIT_LENGTH/UNIT_VELOCITY;
 
         NTRACER_LOOP(n) abundance[n-TRC] = v[n][k][j][i];
+
+	if (prank == prankPrint && k == kPrint && j == jPrint && i==iPrint) verboseChem = 1;
+
+	if (verboseChem == 1)
+	{
+		printLog("Calculating chemistry in cell %d %d %d\n", i, j, k);
+		printLog("located at r=%e, theta=%f, phi=%f; with\n", grid->x[IDIR][i], grid->x[JDIR][j], grid->x[KDIR][k]);
+		printLog("Density: %e\n", density_cgs);
+		printLog("Temperature: %e\n", temperature_cgs);
+		NTRACER_LOOP(n) printLog("tracer%d: %e\n", n-TRC, abundance[n-TRC]);
+		LogFileFlush();
+	}
  
         // set incoming radial column density
         prizmo_set_radial_ncol_h2_c(&irradiation.column_density[1][k][j][i]);
+	if (verboseChem == 1)
+	{
+		printLog("set radial_ncol_h2 to %e\n", &irradiation.column_density[1][k][j][i]);
+		LogFileFlush();
+	}
         prizmo_set_radial_ncol_co_c(&irradiation.column_density[2][k][j][i]);
-
         // set excaping vertical column density
         prizmo_set_vertical_ncol_co_c(&irradiation.column_density[2][k][j][i]);
+	if (verboseChem == 1)
+	{
+		printLog("set ncol_co to %e\n", &irradiation.column_density[2][k][j][i]);
+		LogFileFlush();
+	}
 
         // update chemical abundances, temperature and radiation flux
         prizmo_evolve_rho_c(abundance, &density_cgs, &temperature_cgs, 
-			irradiation.jflux[k][j][i], &dt_cgs);
+			irradiation.jflux[k][j][i], &dt_cgs, &verboseChem);
 
         v[PRS][k][j][i] = v[RHO][k][j][i]*temperature_cgs/(KELVIN*g_inputParam[G_MU]);
 
         NTRACER_LOOP(n) v[n][k][j][i] = abundance[n-TRC];
+
+	if (verboseChem == 1)
+	{
+		printLog("Calculating chemistry complete\n");
+		LogFileFlush();
+	}
+
     }
 }
 
