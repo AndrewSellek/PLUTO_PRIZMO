@@ -262,7 +262,7 @@ void calculate_Attenuation(Data_Arr v, Grid *grid)
     double jflux[NPHOTO];
     MPI_Status status;
 
-    for (rank=0; g_nprocs; rank++){
+    for (rank=0; rank < g_nprocs; rank++){
       if(prank == rank){
         KDOM_LOOP(k){
           JDOM_LOOP(j){
@@ -287,7 +287,7 @@ void calculate_Attenuation(Data_Arr v, Grid *grid)
 		
 		//calculate radiation attenuation at the radial cell i
                 prizmo_rt_rho_c(abundance, &density_cgs, &temperature_cgs, jflux, &dr_cgs);
-		
+
 		//assign attenuated radiation flux to the next radial cell
                 NPHOTO_LOOP(n) irradiation.jflux[k][j][i+1][n] = jflux[n];
             }
