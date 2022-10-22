@@ -278,15 +278,15 @@ int main (int argc, char *argv[])
          Do it every two steps if cooling or dimensional
          splitting are used.
      ------------------------------------------------------ */
-#ifndef DISABLE_HYDRO
+#if DISABLE_HYDRO
+    g_dt = 1.1*g_dt;
+    //if (g_dt > 0.1) g_dt = 0.1;	! Experiment with capping timestep
+#else
     #if (COOLING == NO) 
     g_dt = NextTimeStep(&Dts, &runtime, grd);
     #else
     if (g_stepNumber%2 == 1) g_dt = NextTimeStep(&Dts, &runtime, grd);
     #endif
-#else
-    g_dt = 1.1*g_dt;
-    //if (g_dt > 0.1) g_dt = 0.1;	! Experiment with capping timestep
 #endif
     g_stepNumber++;
     first_step = 0;
@@ -454,7 +454,10 @@ int Integrate (Data *d, timeStep *Dts, Grid *grid)
    3. Perform Strang Splitting between hydro and source
    -------------------------------------------------------- */
 
-#ifndef DISABLE_HYDRO
+#if (DISABLE_HYDRO == YES) && (CHEMISTRY == YES)
+  Boundary(d, ALL_DIR, grid);
+  Chemistry(d->Vc, g_dt, grid);
+#elif (DISABLE_HYDRO == NO)
   if (nretry == 0) TOT_LOOP(k,j,i) d->flag[k][j][i] = 0;
 
   #ifdef FARGO
@@ -469,10 +472,8 @@ int Integrate (Data *d, timeStep *Dts, Grid *grid)
     err = AdvanceStep (d, Dts, grid);
   }
 #else
- #if (DISABLE_HYDRO == YES) && (CHEMISTRY == YES)
-  Boundary(d, ALL_DIR, grid);
-  Chemistry(d->Vc, g_dt, grid);
- #endif
+   print ("! Run with neither hydro nor chemistry disallowed.\n");
+   QUIT_PLUTO(1);
 #endif
 
 /* --------------------------------------------------------

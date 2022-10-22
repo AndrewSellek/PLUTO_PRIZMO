@@ -245,7 +245,9 @@ void RestartGet (Runtime *ini, int nrestart, int out_type, int swap_endian)
 #endif
 
   g_time       = restart.t;
+#if (FORCE_FIRST_DT == NO)
   g_dt         = restart.dt;
+#endif
   g_stepNumber = restart.nstep;
 
   for (n = 0; n < MAX_OUTPUT_TYPES; n++){

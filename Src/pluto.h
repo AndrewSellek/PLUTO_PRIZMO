@@ -497,6 +497,18 @@
  #define WARNING_MESSAGES    YES
 #endif
 
+#ifndef CHEMISTRY
+ #define CHEMISTRY   NO
+#endif
+
+#ifndef DISABLE_HYDRO
+ #define DISABLE_HYDRO    NO
+#endif
+
+#ifndef FORCE_FIRST_DT
+ #define FORCE_FIRST_DT    NO
+#endif
+
 /* ********************************************************
     Set HAVE_ENERGY to YES if an energy equation exists
    ******************************************************** */
