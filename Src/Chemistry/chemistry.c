@@ -17,7 +17,7 @@ void initialize_Microphysics(Grid *grid)
  *
  *********************************************************************** */
 {
-    int n;
+    int n, i, j, k;
     irradiation.neighbour.receive_rank = -1;
     irradiation.neighbour.send_rank = -1;
 
@@ -26,10 +26,15 @@ void initialize_Microphysics(Grid *grid)
     irradiation.jflux0 = ARRAY_1D(NPHOTO, double);
     irradiation.data_buffer = ARRAY_1D(NX2*NX3, double);
     irradiation.column_density_offset = ARRAY_1D(NX2*NX3, double);
+    irradiation.tcpu = ARRAY_3D(NX3_TOT, NX2_TOT, NX1_TOT, double);
 
     for(n = 0; n < NX2 * NX3; ++n)
     {
         irradiation.column_density_offset[n] = 0.;
+    }
+
+    DOM_LOOP(k, j, i){
+        irradiation.tcpu[k][j][i] = 0.;
     }
 
     find_CommunicationNeighbours(grid);
@@ -47,6 +52,7 @@ void cleanup_Microphysics()
     FreeArray1D((void *) irradiation.jflux0);
     FreeArray1D((void *) irradiation.data_buffer);
     FreeArray1D((void *) irradiation.column_density_offset);
+    FreeArray3D((void *) irradiation.tcpu);
 }
 
 /* ********************************************************************* */
@@ -64,41 +70,49 @@ void Chemistry(Data_Arr v, double dt, Grid *grid)
     int verboseChem=0, prankPrint=-1, kPrint=-1, jPrint=-1, iPrint=-1;
     double abundance[NTRACER];
     double temperature_cgs, dt_cgs, density_cgs;
+    clock_t t_chem_start, t_chem_end;
 
     DOM_LOOP(k, j, i){
+        t_chem_start = clock();
         density_cgs = v[RHO][k][j][i]*UNIT_DENSITY;
         temperature_cgs = v[PRS][k][j][i]/v[RHO][k][j][i]*(KELVIN*g_inputParam[G_MU]);
         dt_cgs = dt*UNIT_LENGTH/UNIT_VELOCITY;
 
-        NTRACER_LOOP(n) abundance[n-TRC] = v[n][k][j][i];
+        NTRACER_LOOP(n) {
+        	abundance[n-TRC] = v[n][k][j][i];
+            //if (abundance[n-TRC] < 0.0) {
+            //    printLog("! Chemistry: rho_tr%d = %8.2e", n-TRC, abundance[n-TRC]);
+            //    Where (i, NULL);
+            //}
+	    }
 
-	if (prank == prankPrint && k == kPrint && j == jPrint && i==iPrint) verboseChem = 1;
+	    if (prank == prankPrint && k == kPrint && j == jPrint && i==iPrint) verboseChem = 1;
 
-	if (verboseChem == 1)
-	{
-		printLog("Calculating chemistry in cell %d %d %d\n", i, j, k);
-		printLog("located at r=%e, theta=%f, phi=%f; with\n", grid->x[IDIR][i], grid->x[JDIR][j], grid->x[KDIR][k]);
-		printLog("Density: %e\n", density_cgs);
-		printLog("Temperature: %e\n", temperature_cgs);
-		NTRACER_LOOP(n) printLog("tracer%d: %e\n", n-TRC, abundance[n-TRC]);
-		LogFileFlush();
-	}
+    	if (verboseChem == 1)
+	    {
+	    	printLog("Calculating chemistry in cell %d %d %d\n", i, j, k);
+	    	printLog("located at r=%e, theta=%f, phi=%f; with\n", grid->x[IDIR][i], grid->x[JDIR][j], grid->x[KDIR][k]);
+	    	printLog("Density: %e\n", density_cgs);
+	    	printLog("Temperature: %e\n", temperature_cgs);
+	    	NTRACER_LOOP(n) printLog("tracer%d: %e\n", n-TRC, abundance[n-TRC]);
+	    	LogFileFlush();
+	    }
  
         // set incoming radial column density
         prizmo_set_radial_ncol_h2_c(&irradiation.column_density[1][k][j][i]);
-	if (verboseChem == 1)
-	{
-		printLog("set radial_ncol_h2 to %e\n", &irradiation.column_density[1][k][j][i]);
-		LogFileFlush();
-	}
+	    if (verboseChem == 1)
+	    {
+	    	printLog("set radial_ncol_h2 to %e\n", &irradiation.column_density[1][k][j][i]);
+	    	LogFileFlush();
+	    }
         prizmo_set_radial_ncol_co_c(&irradiation.column_density[2][k][j][i]);
         // set excaping vertical column density
         prizmo_set_vertical_ncol_co_c(&irradiation.column_density[2][k][j][i]);
-	if (verboseChem == 1)
-	{
-		printLog("set ncol_co to %e\n", &irradiation.column_density[2][k][j][i]);
-		LogFileFlush();
-	}
+	    if (verboseChem == 1)
+	    {
+	    	printLog("set ncol_co to %e\n", &irradiation.column_density[2][k][j][i]);
+	    	LogFileFlush();
+	    }
 
         // update chemical abundances, temperature and radiation flux
         prizmo_evolve_rho_c(abundance, &density_cgs, &temperature_cgs, 
@@ -108,11 +122,15 @@ void Chemistry(Data_Arr v, double dt, Grid *grid)
 
         NTRACER_LOOP(n) v[n][k][j][i] = abundance[n-TRC];
 
-	if (verboseChem == 1)
-	{
-		printLog("Calculating chemistry complete\n");
-		LogFileFlush();
-	}
+	    if (verboseChem == 1)
+	    {
+	    	printLog("Calculating chemistry complete\n");
+	    	LogFileFlush();
+	    }
+
+        // Timing
+        t_chem_end = clock();
+        irradiation.tcpu[k][j][i] = ((double) (t_chem_end - t_chem_start)) / CLOCKS_PER_SEC;
 
     }
 }
@@ -238,6 +256,7 @@ void calculate_Attenuation(Data_Arr v, Grid *grid)
     int k, j, i, l, n, rank;
     double density_cgs, temperature_cgs, dr_cgs;
     double abundance[NTRACER];
+    double Lflux[NPHOTO];
     double jflux[NPHOTO];
     MPI_Status status;
 
@@ -246,16 +265,19 @@ void calculate_Attenuation(Data_Arr v, Grid *grid)
             KDOM_LOOP(k){
                 JDOM_LOOP(j){
                     if(irradiation.neighbour.receive_rank == -1 && irradiation.neighbour.send_rank != -1){ //no neighbor in between the star and the current domain
-                        //initialize radiation fluxes
+                        //initialize radiation luminosity
                         NPHOTO_LOOP(n) {
-                            jflux[n] = irradiation.jflux0[n];
-                            irradiation.jflux[k][j][IBEG][n] = irradiation.jflux0[n];
+                            Lflux[n] = irradiation.jflux0[n];
                         }
 	                }
 	                else {
-                        MPI_Recv(jflux, NPHOTO, MPI_DOUBLE, irradiation.neighbour.receive_rank, 0, MPI_COMM_WORLD, &status);
-	                    NPHOTO_LOOP(n) irradiation.jflux[k][j][IBEG][n] = jflux[n];
+                        MPI_Recv(Lflux, NPHOTO, MPI_DOUBLE, irradiation.neighbour.receive_rank, 0, MPI_COMM_WORLD, &status);
 	                }
+                    //scale to fluxes
+                    NPHOTO_LOOP(n) {
+                        jflux[n] = Lflux[n]/(4.0*CONST_PI*grid->x[IDIR][IBEG]*grid->x[IDIR][IBEG]);
+                        irradiation.jflux[k][j][IBEG][n] = jflux[n];
+                    }
 
                     IDOM_LOOP(i){
                         density_cgs = v[RHO][k][j][i] * UNIT_DENSITY;
@@ -267,10 +289,19 @@ void calculate_Attenuation(Data_Arr v, Grid *grid)
 		                //calculate radiation attenuation at the radial cell i
                         prizmo_rt_rho_c(abundance, &density_cgs, &temperature_cgs, jflux, &dr_cgs);
 		
-		                //assign attenuated radiation flux to the next radial cell
-                        NPHOTO_LOOP(n) irradiation.jflux[k][j][i+1][n] = jflux[n];
+		                //assign attenuated and diluted radiation flux to the next radial cell
+                        NPHOTO_LOOP(n) {
+                            jflux[n] *= (grid->x[IDIR][i]*grid->x[IDIR][i])/(grid->x[IDIR][i+1]*grid->x[IDIR][i+1]);
+                            irradiation.jflux[k][j][i+1][n] = jflux[n];
+                        }
                     }
-	                if(irradiation.neighbour.send_rank != -1) MPI_Send(jflux, NPHOTO, MPI_DOUBLE, irradiation.neighbour.send_rank, 0, MPI_COMM_WORLD);
+	                if(irradiation.neighbour.send_rank != -1) {
+                        //scale to luminosity
+                        NPHOTO_LOOP(n) {
+                            Lflux[n] = jflux[n]*(4.0*CONST_PI*grid->x[IDIR][IEND]*grid->x[IDIR][IEND]);
+                        }
+                        MPI_Send(Lflux, NPHOTO, MPI_DOUBLE, irradiation.neighbour.send_rank, 0, MPI_COMM_WORLD);
+                    }
                 }
 	        }
         }

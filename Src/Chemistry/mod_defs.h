@@ -174,6 +174,7 @@ typedef struct IRRADIATION_DATA
 	double*    jflux0;
         double*    data_buffer;
         double*    column_density_offset;
+        double***  tcpu;
 
 } IrradiationData;
 
