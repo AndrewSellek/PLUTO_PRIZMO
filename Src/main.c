@@ -466,9 +466,13 @@ int Integrate (Data *d, timeStep *Dts, Grid *grid)
 
   if ((g_stepNumber%2) == 0){
     err = AdvanceStep (d, Dts, grid);
-    SplitSource (d, g_dt, Dts, grid);
+    #if (FAILSAFE == YES) && (CHEMISTRY == YES)
+    if (err == 0) SplitSource (d, g_dt, Dts, grid);	// Chemistry etc only done if no error
+    #else
+    SplitSource (d, g_dt, Dts, grid);			// Chemistry done after advection on even step
+    #endif
   }else{
-    SplitSource (d, g_dt, Dts, grid);
+    SplitSource (d, g_dt, Dts, grid);			// Chemistry done before advection on odd step
     err = AdvanceStep (d, Dts, grid);
   }
 #else
@@ -533,7 +537,13 @@ int Integrate (Data *d, timeStep *Dts, Grid *grid)
     #endif
     #endif
     nretry++;
-    printLog ("> Retrying step\n");
+    if (nretry == 1) {
+        printLog ("> Retrying step with different solvers\n");
+    }
+    else {
+        g_dt = 0.1*g_dt;
+        printLog ("> Retrying step again (nretry=%d) with smaller dt=%3.2e\n", nretry, g_dt);
+    }
     Integrate (d, Dts, grid);
   }
 #endif

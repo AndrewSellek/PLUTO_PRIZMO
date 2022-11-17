@@ -128,6 +128,7 @@ int ConsToPrim (double **ucons, double **uprim, int beg, int end, uint16_t *flag
     if (u[RHO] < 0.0) {
       printLog("! ConsToPrim: rho < 0 (%8.2e), ", u[RHO]);
       Where (i, NULL);
+
       u[RHO]   = g_smallDensity;
       flag[i] |= FLAG_CONS2PRIM_FAIL;
       flag[i] |= FLAG_NEGATIVE_DENSITY;
@@ -200,10 +201,28 @@ int ConsToPrim (double **ucons, double **uprim, int beg, int end, uint16_t *flag
     #elif EOS == PVTE_LAW
 
   /* -- Convert scalars here since EoS may need ion fractions -- */
+  /* -- Check tracer density positivity -- */
 
-    #if NSCL > 0                       
-    NSCL_LOOP(nv) v[nv] = u[nv]*tau;
-    #endif    
+    #if NSCL > 0
+    NSCL_LOOP(nv) {
+        v[nv] = u[nv]*tau;
+        if (v[nv] < -1e-6 || u[nv] < -1*g_smallDensity) {
+          printLog("! ConsToPrim PVTE_LAW: rho_tr%d = %8.2e", nv-TRC, u[nv]);
+          Where (i, NULL);
+          printLog("!! Cons:%8.2e, 1/rho:%8.2e, Prim:%8.2e -> flag cell\n", u[nv], tau, v[nv]);
+          flag[i] |= FLAG_CONS2PRIM_FAIL;
+          flag[i] |= FLAG_NEGATIVE_DENSITY;
+          ifail    = 1;
+        }
+        else if (v[nv] < 0.0) {
+          printLog("! ConsToPrim PVTE_LAW: rho_tr%d = %8.2e", nv-TRC, u[nv]);
+          Where (i, NULL);
+          printLog("!! Cons:%8.2e, 1/rho:%8.2e, Prim:%8.2e -> set to 0\n", u[nv], tau, v[nv]);
+          v[nv] = 0.0;
+        }
+    }
+    #endif
+
 
     if (u[ENG] != u[ENG]){
       printLog ("! ConsToPrim(): NaN found in energy\n");
@@ -240,9 +259,27 @@ int ConsToPrim (double **ucons, double **uprim, int beg, int end, uint16_t *flag
     v[VX3_D] = u[MX3_D]/v[RHO_D];
     #endif
 
-    #if NSCL > 0                    
-    NSCL_LOOP(nv) v[nv] = u[nv]*tau;
-    #endif    
+  /* -- Check tracer density positivity -- */
+
+    #if NSCL > 0
+    NSCL_LOOP(nv) {
+        v[nv] = u[nv]*tau;
+        if (v[nv] < -1e-6 || u[nv] < -1*g_smallDensity) {
+          printLog("! ConsToPrim: rho_tr%d = %8.2e", nv-TRC, u[nv]);
+          Where (i, NULL);
+          printLog("!! Cons:%8.2e, 1/rho:%8.2e, Prim:%8.2e\n -> flag cell\n", u[nv], tau, v[nv]);
+          flag[i] |= FLAG_CONS2PRIM_FAIL;
+          flag[i] |= FLAG_NEGATIVE_DENSITY;
+          ifail    = 1;
+        }
+        else if (v[nv] < 0.0) {
+          printLog("! ConsToPrim: rho_tr%d = %8.2e", nv-TRC, u[nv]);
+          Where (i, NULL);
+          printLog("!! Cons:%8.2e, 1/rho:%8.2e, Prim:%8.2e\n -> set to 0\n", u[nv], tau, v[nv]);
+          v[nv] = 0.0;
+        }
+    }
+    #endif
     
   }
   return ifail;
