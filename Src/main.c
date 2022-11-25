@@ -39,7 +39,7 @@
   #define SHOW_TIMING      NO  /* Compute CPU timing between steps */
 #endif
 
-static double   NextTimeStep (timeStep *, Runtime *, Grid *);
+static double   NextTimeStep (timeStep *, Runtime *, Grid *, double);
 static char *TotalExecutionTime (double);
 static int Integrate (Data *, timeStep *, Grid *);
 static void CheckForOutput (Data *, Runtime *, time_t, Grid *);
@@ -59,6 +59,7 @@ int main (int argc, char *argv[])
  *********************************************************************** */
 {
   int    nv, idim, err;
+  double  dt_factor;
   char   first_step=1, last_step = 0;
   char   input_file[128];
   double scrh;
@@ -217,7 +218,8 @@ int main (int argc, char *argv[])
      ---------------------------------------------------- */
 
     if (cmd_line.jet != -1) SetJetDomain (&data, cmd_line.jet, runtime.log_freq, grd); 
-    err = Integrate (&data, &Dts, grd);
+    dt_factor = Integrate (&data, &Dts, grd);
+    //printLog("dt_factor = %3.3e\n", dt_factor);
     if (cmd_line.jet != -1) UnsetJetDomain (&data, cmd_line.jet, grd); 
 
   /* ----------------------------------------------------
@@ -283,9 +285,9 @@ int main (int argc, char *argv[])
     //if (g_dt > 0.1) g_dt = 0.1;	! Experiment with capping timestep
 #else
     #if (COOLING == NO) 
-    g_dt = NextTimeStep(&Dts, &runtime, grd);
+    g_dt = NextTimeStep(&Dts, &runtime, grd, dt_factor);
     #else
-    if (g_stepNumber%2 == 1) g_dt = NextTimeStep(&Dts, &runtime, grd);
+    if (g_stepNumber%2 == 1) g_dt = NextTimeStep(&Dts, &runtime, grd, dt_factor);
     #endif
 #endif
     g_stepNumber++;
@@ -354,6 +356,7 @@ int Integrate (Data *d, timeStep *Dts, Grid *grid)
   int  idim, err = 0;
   int  i,j,k,nv;
   static int nretry=0;
+  double dt_factor = 1.0;
 
 /* --------------------------------------------------------
    0. Save initial step values (only for FAILSAFE)
@@ -483,6 +486,7 @@ int Integrate (Data *d, timeStep *Dts, Grid *grid)
 /* --------------------------------------------------------
    4. Fail-safe procedure:
    -------------------------------------------------------- */
+  dt_factor = pow(10.0, (double)nretry);
 
 #if FAILSAFE == YES
   if (err == 0){  /* Step succeeded */
@@ -544,7 +548,7 @@ int Integrate (Data *d, timeStep *Dts, Grid *grid)
         g_dt = 0.1*g_dt;
         printLog ("> Retrying step again (nretry=%d) with smaller dt=%3.2e\n", nretry, g_dt);
     }
-    Integrate (d, Dts, grid);
+    dt_factor = Integrate (d, Dts, grid);
   }
 #endif
 
@@ -556,7 +560,7 @@ int Integrate (Data *d, timeStep *Dts, Grid *grid)
   GLM_Source (d, 0.5*g_dt, grid);
 #endif
 
-  return 0; /* -- ok, step achieved -- */
+  return dt_factor; /* -- ok, step achieved -- */
 }
 
 /* ********************************************************************* */
@@ -581,7 +585,7 @@ char *TotalExecutionTime (double dt)
 }
 
 /* ********************************************************************* */
-double NextTimeStep (timeStep *Dts, Runtime *runtime, Grid *grid)
+double NextTimeStep (timeStep *Dts, Runtime *runtime, Grid *grid, double dt_factor)
 /*!
  * Compute and return the time step for the next time level
  * using the information from the previous integration
@@ -729,7 +733,9 @@ double NextTimeStep (timeStep *Dts, Runtime *runtime, Grid *grid)
       first_dt has been overestimated.
    -------------------------------------------------------- */
 
-  dtnext = MIN(dtnext, runtime->cfl_max_var*g_dt);
+  //if (dt_factor > 1.0)
+  //printLog("dt_choices: %10.4e/%10.4e", dtnext, dt_factor*runtime->cfl_max_var*g_dt);
+  dtnext = MIN(dtnext, dt_factor*runtime->cfl_max_var*g_dt);
 
   if (dtnext < runtime->first_dt*1.e-9){
     char *str = IndentString();
