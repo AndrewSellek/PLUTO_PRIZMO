@@ -72,6 +72,8 @@ void Chemistry(Data_Arr v, double dt, Grid *grid)
     double temperature_cgs, dt_cgs, density_cgs;
     clock_t t_chem_start, t_chem_end;
 
+    irradiation.tchem = 0.0;
+
     DOM_LOOP(k, j, i){
         t_chem_start = clock();
         density_cgs = v[RHO][k][j][i]*UNIT_DENSITY;
@@ -131,6 +133,7 @@ void Chemistry(Data_Arr v, double dt, Grid *grid)
         // Timing
         t_chem_end = clock();
         irradiation.tcpu[k][j][i] = ((double) (t_chem_end - t_chem_start)) / CLOCKS_PER_SEC;
+        irradiation.tchem += irradiation.tcpu[k][j][i];
 
     }
 }
@@ -259,6 +262,11 @@ void calculate_Attenuation(Data_Arr v, Grid *grid)
     double Lflux[NPHOTO];
     double jflux[NPHOTO];
     MPI_Status status;
+    clock_t t_chem_start, t_chem_end;
+
+    irradiation.tatten = 0.0;
+    t_chem_start = clock();
+
 
     for (rank=0; rank<g_nprocs; rank++){
         if(prank == rank){
@@ -307,6 +315,11 @@ void calculate_Attenuation(Data_Arr v, Grid *grid)
         }
         MPI_Barrier(MPI_COMM_WORLD);
     }
+
+    // Timing
+    t_chem_end = clock();
+    irradiation.tatten = ((double) (t_chem_end - t_chem_start)) / CLOCKS_PER_SEC;
+
 }
 
 /*********************************************************************** */

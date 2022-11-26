@@ -268,9 +268,11 @@ int main (int argc, char *argv[])
     if (g_stepNumber%runtime.log_freq == 0) {
       scrh = (double)(clock_end - clock_beg)/CLOCKS_PER_SEC;
       print ("%s [clock (total)         = %f (s)]\n",IndentString(), scrh);
-      print ("%s [clock (AdvanceStep()) = %f (s)]\n",IndentString(),Dts.clock_hyp);
+      print ("%s [clock (chemistry)     = %f (s)]\n",IndentString(), irradiation.tchem);
+      print ("%s [clock (attenuation)   = %f (s)]\n",IndentString(), irradiation.tatten);
+      print ("%s [clock (AdvanceStep()) = %f (s)]\n",IndentString(), Dts.clock_hyp);
       #if PARTICLES
-      print ("%s [clock (particles)     = %f (s)]\n",IndentString(),Dts.clock_particles);
+      print ("%s [clock (particles)     = %f (s)]\n",IndentString(), Dts.clock_particles);
       #endif
     }
     #endif
