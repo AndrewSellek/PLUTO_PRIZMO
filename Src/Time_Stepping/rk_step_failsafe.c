@@ -52,6 +52,11 @@ static double ***Bss0[3];
 
   RBoxDefine (IBEG, IEND, JBEG, JEND, KBEG, KEND, CENTER, &box);
 
+#if SHOW_TIMING == YES
+  clock_t clock_beg = clock();
+  clock_t clock_end;
+#endif
+
 /* --------------------------------------------------------
    0. Allocate memory 
    -------------------------------------------------------- */
@@ -280,6 +285,11 @@ DIM_LOOP(nv)    TOT_LOOP(k,j,i) d->Vs[nv][k][j][i] = Bss0[nv][k][j][i];
   Particles_LP_UpdateSpectra (d, g_dt, grid);
   #endif
   Particles_Inject(d,grid);
+#endif
+
+#if SHOW_TIMING
+  clock_end = clock();
+  Dts->clock_hyp = (double)(clock_end - clock_beg)/CLOCKS_PER_SEC;
 #endif
 
   return 0; /* -- step has been achieved, return success -- */

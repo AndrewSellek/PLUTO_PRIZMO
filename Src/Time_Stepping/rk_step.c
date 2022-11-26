@@ -65,6 +65,11 @@ int AdvanceStep (Data *d, timeStep *Dts, Grid *grid)
   dt_rk3 = g_dt*0.5*(1.0-rk_gamma);
   #endif
 
+#if SHOW_TIMING == YES
+  clock_t clock_beg = clock();
+  clock_t clock_end;
+#endif
+
 /* --------------------------------------------------------
    0. Allocate memory 
    -------------------------------------------------------- */
@@ -325,6 +330,11 @@ int AdvanceStep (Data *d, timeStep *Dts, Grid *grid)
   Particles_LP_UpdateSpectra (d, g_dt, grid);
   #endif
   Particles_Inject(d,grid);
+#endif
+
+#if SHOW_TIMING
+  clock_end = clock();
+  Dts->clock_hyp = (double)(clock_end - clock_beg)/CLOCKS_PER_SEC;
 #endif
 
   return 0; /* -- step has been achieved, return success -- */
