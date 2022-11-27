@@ -262,12 +262,12 @@ void calculate_Attenuation(Data_Arr v, Grid *grid)
     double Lflux[NPHOTO];
     double jflux[NPHOTO];
     MPI_Status status;
-    clock_t t_chem_start, t_chem_end;
+    clock_t t_atten_start, t_atten_end;
 
     irradiation.tatten = 0.0;
-    t_chem_start = clock();
+    t_atten_start = clock();
 
-
+    /*
     for (rank=0; rank<g_nprocs; rank++){
         if(prank == rank){
             KDOM_LOOP(k){
@@ -315,10 +315,58 @@ void calculate_Attenuation(Data_Arr v, Grid *grid)
         }
         MPI_Barrier(MPI_COMM_WORLD);
     }
+    */
+
+    if(irradiation.neighbour.receive_rank != irradiation.neighbour.send_rank)//check if more than one process is in the communicator (nproc > 1)
+    {
+        KDOM_LOOP(k){
+            JDOM_LOOP(j){
+                if(irradiation.neighbour.receive_rank == -1 && irradiation.neighbour.send_rank != -1){ //no neighbor in between the star and the current domain
+                    //initialize radiation luminosity
+                    NPHOTO_LOOP(n) {
+                        Lflux[n] = irradiation.jflux0[n];
+                    }
+                }
+                else {
+                    MPI_Recv(Lflux, NPHOTO, MPI_DOUBLE, irradiation.neighbour.receive_rank, 0, MPI_COMM_WORLD, &status);
+                }
+                //scale to fluxes
+                NPHOTO_LOOP(n) {
+                    jflux[n] = Lflux[n]/(4.0*CONST_PI*grid->x[IDIR][IBEG]*grid->x[IDIR][IBEG]);
+                    irradiation.jflux[k][j][IBEG][n] = jflux[n];
+                }
+
+                IDOM_LOOP(i){
+                    density_cgs = v[RHO][k][j][i] * UNIT_DENSITY;
+                    dr_cgs = grid->dx[IDIR][i]*UNIT_LENGTH;
+                    temperature_cgs = v[PRS][k][j][i]/v[RHO][k][j][i]*(KELVIN*g_inputParam[G_MU]);
+
+                    NTRACER_LOOP(l) abundance[l-TRC] = v[l][k][j][i];
+
+                    //calculate radiation attenuation at the radial cell i
+                    prizmo_rt_rho_c(abundance, &density_cgs, &temperature_cgs, jflux, &dr_cgs);
+
+                    //assign attenuated and diluted radiation flux to the next radial cell
+                    NPHOTO_LOOP(n) {
+                        jflux[n] *= (grid->x[IDIR][i]*grid->x[IDIR][i])/(grid->x[IDIR][i+1]*grid->x[IDIR][i+1]);
+                        irradiation.jflux[k][j][i+1][n] = jflux[n];
+                    }
+                }
+                if(irradiation.neighbour.send_rank != -1) {
+                    //scale to luminosity
+                    NPHOTO_LOOP(n) {
+                        Lflux[n] = jflux[n]*(4.0*CONST_PI*grid->x[IDIR][IEND]*grid->x[IDIR][IEND]);
+                    }
+                    MPI_Send(Lflux, NPHOTO, MPI_DOUBLE, irradiation.neighbour.send_rank, 0, MPI_COMM_WORLD);
+                }
+            }
+        }
+        MPI_Barrier(MPI_COMM_WORLD);
+    }
 
     // Timing
-    t_chem_end = clock();
-    irradiation.tatten = ((double) (t_chem_end - t_chem_start)) / CLOCKS_PER_SEC;
+    t_atten_end = clock();
+    irradiation.tatten = ((double) (t_atten_end - t_atten_start)) / CLOCKS_PER_SEC;
 
 }
 

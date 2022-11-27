@@ -177,6 +177,7 @@ typedef struct IRRADIATION_DATA
         double***  tcpu;
         double     tchem;
         double     tatten;
+        double     tcoldens;
 
 } IrradiationData;
 

@@ -270,6 +270,7 @@ int main (int argc, char *argv[])
       print ("%s [clock (total)         = %f (s)]\n",IndentString(), scrh);
       print ("%s [clock (chemistry)     = %f (s)]\n",IndentString(), irradiation.tchem);
       print ("%s [clock (attenuation)   = %f (s)]\n",IndentString(), irradiation.tatten);
+      print ("%s [clock (coldens)       = %f (s)]\n",IndentString(), irradiation.tcoldens);
       print ("%s [clock (AdvanceStep()) = %f (s)]\n",IndentString(), Dts.clock_hyp);
       #if PARTICLES
       print ("%s [clock (particles)     = %f (s)]\n",IndentString(), Dts.clock_particles);
