@@ -355,7 +355,7 @@ void calculate_Attenuation(Data_Arr v, Grid *grid)
                 if(irradiation.neighbour.send_rank != -1) {
                     //scale to luminosity
                     NPHOTO_LOOP(n) {
-                        Lflux[n] = jflux[n]*(4.0*CONST_PI*grid->x[IDIR][IEND]*grid->x[IDIR][IEND]);
+                        Lflux[n] = jflux[n]*(4.0*CONST_PI*grid->x[IDIR][IEND+1]*grid->x[IDIR][IEND+1]);
                     }
                     MPI_Send(Lflux, NPHOTO, MPI_DOUBLE, irradiation.neighbour.send_rank, 0, MPI_COMM_WORLD);
                 }
