@@ -9,7 +9,7 @@ CFLAGS   = -c -O3 -Wundef
 LDFLAGS  = -lm
 
 PARALLEL = TRUE
-USE_HDF5 = FALSE
+USE_HDF5 = TRUE
 USE_PNG  = FALSE
 
 #######################################
