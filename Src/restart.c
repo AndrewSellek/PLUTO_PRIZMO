@@ -244,11 +244,11 @@ void RestartGet (Runtime *ini, int nrestart, int out_type, int swap_endian)
   MPI_Bcast (&restart, sizeof (Restart), MPI_BYTE, 0, MPI_COMM_WORLD);
 #endif
 
-  g_time       = restart.t;
 #if (FORCE_FIRST_DT == NO)
+  g_time       = restart.t;
   g_dt         = restart.dt;
-#endif
   g_stepNumber = restart.nstep;
+#endif
 
   for (n = 0; n < MAX_OUTPUT_TYPES; n++){
     ini->output[n].nfile = restart.nfile[n];
