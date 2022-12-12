@@ -459,12 +459,12 @@ int Integrate (Data *d, timeStep *Dts, Grid *grid)
 /* --------------------------------------------------------
    3. Perform Strang Splitting between hydro and source
    -------------------------------------------------------- */
+  if (nretry == 0) TOT_LOOP(k,j,i) d->flag[k][j][i] = 0;
 
 #if (DISABLE_HYDRO == YES) && (CHEMISTRY == YES)
   Boundary(d, ALL_DIR, grid);
-  Chemistry(d->Vc, g_dt, grid);
+  Chemistry(d->Vc, g_dt, grid, d->flag);
 #elif (DISABLE_HYDRO == NO)
-  if (nretry == 0) TOT_LOOP(k,j,i) d->flag[k][j][i] = 0;
 
   #ifdef FARGO
   FARGO_AverageVelocity(d, grid);
@@ -896,6 +896,6 @@ void CheckForAnalysis (Data *d, Runtime *runtime, Grid *grid)
   check_dn = (g_stepNumber%runtime->anl_dn) == 0;
   check_dn = check_dn && (runtime->anl_dn > 0);
 
-  if (check_dt || check_dn) Analysis (d, grid);
+  if (check_dt || check_dn) Analysis (d, grid, runtime->output_dir);
 }
 

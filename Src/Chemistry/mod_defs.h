@@ -31,9 +31,10 @@
 
 #define NFLX (4 + HAVE_ENERGY)
 
-#define NTRACER 40
+#define NTRACER 33
 #define NPHOTO 1000
 #define NIONS  0
+#define NCOLUMN 3
 
 #define IDX_CHEM_C (NFLX + NIONS + 0)
 #define IDX_CHEM_CH (NFLX + NIONS + 1)
@@ -49,32 +50,25 @@
 #define IDX_CHEM_CO_DUST (NFLX + NIONS + 11)
 #define IDX_CHEM_COj (NFLX + NIONS + 12)
 #define IDX_CHEM_Cj (NFLX + NIONS + 13)
-#define IDX_CHEM_Cjj (NFLX + NIONS + 14)
-#define IDX_CHEM_Cjjj (NFLX + NIONS + 15)
-#define IDX_CHEM_Cjjjj (NFLX + NIONS + 16)
-#define IDX_CHEM_E (NFLX + NIONS + 17)
-#define IDX_CHEM_H (NFLX + NIONS + 18)
-#define IDX_CHEM_H2 (NFLX + NIONS + 19)
-#define IDX_CHEM_H2O (NFLX + NIONS + 20)
-#define IDX_CHEM_H2O_DUST (NFLX + NIONS + 21)
-#define IDX_CHEM_H2Oj (NFLX + NIONS + 22)
-#define IDX_CHEM_H2j (NFLX + NIONS + 23)
-#define IDX_CHEM_H3Oj (NFLX + NIONS + 24)
-#define IDX_CHEM_H3j (NFLX + NIONS + 25)
-#define IDX_CHEM_HCOj (NFLX + NIONS + 26)
-#define IDX_CHEM_He (NFLX + NIONS + 27)
-#define IDX_CHEM_Hej (NFLX + NIONS + 28)
-#define IDX_CHEM_Hejj (NFLX + NIONS + 29)
-#define IDX_CHEM_Hj (NFLX + NIONS + 30)
-#define IDX_CHEM_O (NFLX + NIONS + 31)
-#define IDX_CHEM_O2 (NFLX + NIONS + 32)
-#define IDX_CHEM_O2j (NFLX + NIONS + 33)
-#define IDX_CHEM_OH (NFLX + NIONS + 34)
-#define IDX_CHEM_OHj (NFLX + NIONS + 35)
-#define IDX_CHEM_Oj (NFLX + NIONS + 36)
-#define IDX_CHEM_Ojj (NFLX + NIONS + 37)
-#define IDX_CHEM_Ojjj (NFLX + NIONS + 38)
-#define IDX_CHEM_Ojjjj (NFLX + NIONS + 39)
+#define IDX_CHEM_E (NFLX + NIONS + 14)
+#define IDX_CHEM_H (NFLX + NIONS + 15)
+#define IDX_CHEM_H2 (NFLX + NIONS + 16)
+#define IDX_CHEM_H2O (NFLX + NIONS + 17)
+#define IDX_CHEM_H2O_DUST (NFLX + NIONS + 18)
+#define IDX_CHEM_H2Oj (NFLX + NIONS + 19)
+#define IDX_CHEM_H2j (NFLX + NIONS + 20)
+#define IDX_CHEM_H3Oj (NFLX + NIONS + 21)
+#define IDX_CHEM_H3j (NFLX + NIONS + 22)
+#define IDX_CHEM_HCOj (NFLX + NIONS + 23)
+#define IDX_CHEM_He (NFLX + NIONS + 24)
+#define IDX_CHEM_Hej (NFLX + NIONS + 25)
+#define IDX_CHEM_Hj (NFLX + NIONS + 26)
+#define IDX_CHEM_O (NFLX + NIONS + 27)
+#define IDX_CHEM_O2 (NFLX + NIONS + 28)
+#define IDX_CHEM_O2j (NFLX + NIONS + 29)
+#define IDX_CHEM_OH (NFLX + NIONS + 30)
+#define IDX_CHEM_OHj (NFLX + NIONS + 31)
+#define IDX_CHEM_Oj (NFLX + NIONS + 32)
 
 /* *************************************************
      Now define more convenient and user-friendly 
@@ -170,8 +164,10 @@ typedef struct IRRADIATION_DATA
 {
         CommunicationNeighbour neighbour;
         double**** column_density;
+        double***  column_density_inner;
         double**** jflux;
-	double*    jflux0;
+	double*    Lstar;
+	double***  Linner;
         double*    data_buffer;
         double*    column_density_offset;
         double***  tcpu;

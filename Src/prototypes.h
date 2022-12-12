@@ -5,7 +5,7 @@
 int    AdvanceStep(Data *, timeStep *, Grid *);
 void   AdvectFlux (const Sweep *, int, int, Grid *);
 void   AMR_StoreFlux (double **, double **, int, int, int, int, int, Grid *);
-void   Analysis (const Data *, Grid *);
+void   Analysis (const Data *, Grid *, char *);
 char     *Array1D (int, size_t);
 char    **Array2D (int, int, size_t);
 char   ***Array3D (int, int, int, size_t);
@@ -93,7 +93,7 @@ void   LogFileOpen (char *, char *);
 
 char  *IndentString();
 void   Init (double *, double, double, double);
-void   InitDomain (Data *, Grid *);
+void   InitDomain (Data *, Grid *, char *);
 void   Initialize(Data *, Runtime *, Grid *, cmdLine *);
 void   InternalBoundaryReset (const Sweep *, timeStep *, int, int, Grid *);
 void   InputDataClose(int);
@@ -189,7 +189,7 @@ void   ShowState (double *, int);
 void   ShowVector (double *, int);
 void   ShowUnits ();
 void   SplitSource (const Data *, double, timeStep *, Grid *);
-void   Startup    (Data *, Grid *);
+void   Startup    (Data *, Grid *, char *);
 void   States     (const Sweep *, int, int, Grid *);
 void   StateStructAllocate (State *);
 void   StoreAMRFlux (double **, double **, int, int, int, int, int, Grid *);
