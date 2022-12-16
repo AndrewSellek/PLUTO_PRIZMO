@@ -6,6 +6,7 @@
 
 CC       = mpicc
 CFLAGS   = -c -O3 -Wundef
+FFLAGS   = -O3 -fp-model=precise -xHost 
 LDFLAGS  = -lm
 
 PARALLEL = TRUE

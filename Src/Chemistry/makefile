@@ -55,7 +55,7 @@ LDFLAGS += -lifcore -limf -lsvml -lintlc -ldl
 $(CHEM_OBJ):  $(HEADERS)
 
 .f.o:
-	$(FC) -c -nowarn $(INCLUDE_DIRS) $<
+	$(FC) -c -nowarn $(FFLAGS) $(INCLUDE_DIRS) $<
 
 .f90.o:
 	$(FC) -c $(FFLAGS) $(INCLUDE_DIRS) $<
