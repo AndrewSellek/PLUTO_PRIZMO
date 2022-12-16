@@ -366,6 +366,11 @@ void calculate_Attenuation(Data_Arr v, Grid *grid)
                     NPHOTO_LOOP(n) {
                         jflux[n] *= (grid->xl[IDIR][i]*grid->xl[IDIR][i])/(grid->xl[IDIR][i+1]*grid->xl[IDIR][i+1]);
                         irradiation.jflux[k][j][i+1][n] = jflux[n];
+                        if (isnan(jflux[n])) {
+                          printLog ("> CheckNan() [jflux %d]: NaN found: %le", n, jflux[n]);
+                          printLog ("  @step = %d (stage = %d);", g_stepNumber, g_intStage);
+                          printLog (" [i,j = %d, %d], [x1,x2 =  %f, %f]\n", i, j, grid->x[IDIR][i], grid->x[JDIR][j]);
+                        }
                     }
                 }
                 if(irradiation.neighbour.send_rank != -1) {
@@ -504,6 +509,11 @@ void calculate_ColumnDensity(Data_Arr v, Grid *grid)
             JDOM_LOOP(j){
                 IDOM_LOOP(i){
                     irradiation.column_density[l][k][j][i] += irradiation.column_density_offset[n];
+                    if (isnan(irradiation.column_density[l][k][j][i])) {
+                      printLog ("> CheckNan() [ColumnDensity %d]: NaN found: %le", l, irradiation.column_density[l][k][j][i]);
+                      printLog ("  @step = %d (stage = %d);", g_stepNumber, g_intStage);
+                      printLog (" [i,j = %d, %d], [x1,x2 =  %f, %f]\n", i, j, grid->x[IDIR][i], grid->x[JDIR][j]);
+                    }
                 }
                 n++;
             }

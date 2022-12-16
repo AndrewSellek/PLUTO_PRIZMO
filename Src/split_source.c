@@ -56,8 +56,10 @@ void SplitSource (const Data *d, double dt, timeStep *Dts, Grid *grid)
 #if CHEMISTRY != NO
 #if INTERNAL_BOUNDARY == YES
   UserDefBoundary (d, NULL, 0, grid);
+  CheckData((Data*)d, grid, "Before Chemistry");
 #endif
   Chemistry(d->Vc, dt, grid, d->flag);
+  CheckData((Data*)d, grid, "After Chemistry");
 #endif
 
 /* ----------------------------------------------
