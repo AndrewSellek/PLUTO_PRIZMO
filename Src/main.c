@@ -106,6 +106,16 @@ int main (int argc, char *argv[])
   LogFileFlush();
 
 /* --------------------------------------------------------
+   0f. Initialize chemistry
+   ----------------------------------------------------- */
+
+#if CHEMISTRY != NO
+  printLog ("> Initialize PRIZMO... \n\n"); 
+  LogFileFlush(); 
+  prizmo_init_c();
+#endif
+
+/* --------------------------------------------------------
    0c. Initialize parallel environment, grid, memory
        allocation.
    -------------------------------------------------------- */
@@ -137,16 +147,6 @@ int main (int argc, char *argv[])
 #endif
 
   g_stepNumber = 0;
-
-/* --------------------------------------------------------
-   0f. Initialize chemistry
-   ----------------------------------------------------- */
-
-#if CHEMISTRY != NO
-  printLog ("> Initialize PRIZMO... \n\n"); 
-  LogFileFlush(); 
-  prizmo_init_c();
-#endif
 
 /* --------------------------------------------------------
    0e. Check if restart is necessary. 
