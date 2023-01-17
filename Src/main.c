@@ -464,6 +464,7 @@ int Integrate (Data *d, timeStep *Dts, Grid *grid)
 #if (DISABLE_HYDRO == YES) && (CHEMISTRY == YES)
   Boundary(d, ALL_DIR, grid);
   Chemistry(d->Vc, g_dt, grid, d->flag);
+  CheckData((Data*)d, grid, "After Chemistry");
 #elif (DISABLE_HYDRO == NO)
 
   #ifdef FARGO

@@ -3,7 +3,7 @@
 extern void prizmo_set_radial_ncol_h2_c(double *);
 extern void prizmo_set_radial_ncol_co_c(double *);
 extern void prizmo_set_vertical_ncol_co_c(double *);
-extern void prizmo_evolve_rho_c(double *, double *, double *, double *, double *, int *);
+extern void prizmo_evolve_rho_c(double *, double *, double *, double *, double *, int *, int *);
 extern void prizmo_frac2n_c(double *, double *, double *);
 extern void prizmo_rt_rho_c(double *, double *, double *, double *, double *);
 
@@ -76,6 +76,7 @@ void Chemistry(Data_Arr v, double dt, Grid *grid, uint16_t ***flag)
 {
     int i, j, k, n;
     int verboseChem=0, prankPrint=-1, kPrint=-1, jPrint=-1, iPrint=-1;
+    int errState=0;
     double abundance[NTRACER];
     double temperature_cgs, dt_cgs, density_cgs;
     clock_t t_chem_start, t_chem_end;
@@ -131,7 +132,12 @@ void Chemistry(Data_Arr v, double dt, Grid *grid, uint16_t ***flag)
 	    }
 
         // Update chemical abundances, temperature and radiation flux
-        prizmo_evolve_rho_c(abundance, &density_cgs, &temperature_cgs, irradiation.jflux[k][j][i], &dt_cgs, &verboseChem);
+        prizmo_evolve_rho_c(abundance, &density_cgs, &temperature_cgs, irradiation.jflux[k][j][i], &dt_cgs, &verboseChem, &errState);
+        if (errState == 1)
+        {
+                printLog("Low temperature %e at (%d,%d,%d)=(%e,%f,%f)\n", temperature_cgs, i, j, k, grid->x[IDIR][i], grid->x[JDIR][j], grid->x[KDIR][k]);
+	    	LogFileFlush();
+        }
         v[PRS][k][j][i] = v[RHO][k][j][i]*temperature_cgs/(KELVIN*g_inputParam[G_MU]);
         NTRACER_LOOP(n) v[n][k][j][i] = abundance[n-TRC];
 
