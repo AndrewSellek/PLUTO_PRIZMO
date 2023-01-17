@@ -4,9 +4,14 @@
 #             
 ########################################################################
 
+switchDBG = -O0 -check all -warn all
+switchDBG += -fpe0 -u -traceback -warn nounused -g
+switchDBG += -init=snan,zero,arrays -ftrapuv -check noarg_temp_created
+
 CC       = mpicc
 CFLAGS   = -c -O3 -Wundef
-FFLAGS   = -O3 -fp-model=precise -xHost 
+#FFLAGS   = $(switchDBG)
+FFLAGS   = -O3 -fp-model=precise -xHost
 LDFLAGS  = -lm
 
 PARALLEL = TRUE
