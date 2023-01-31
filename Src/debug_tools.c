@@ -59,7 +59,7 @@ int CheckData (Data *data, Grid *grid, const char *str)
                          "negative pressure or energy"};
 
 /* --------------------------------------------------------
-   1. Check nan for conserved variables
+   1. Check nan for primitive variables
    -------------------------------------------------------- */
 
   g_dir = IDIR;
@@ -68,6 +68,9 @@ int CheckData (Data *data, Grid *grid, const char *str)
     g_k = k;
     err = 0;
     NVAR_LOOP(nv){
+      #if ENTROPY_SWITCH 
+      if (nv == ENTR) continue;
+      #endif
       if (isnan(data->Vc[nv][k][j][i])) err = 1;
     }
 

@@ -203,8 +203,8 @@ int ConsToPrim (double **ucons, double **uprim, int beg, int end, uint16_t *flag
   /* -- Convert scalars here since EoS may need ion fractions -- */
   /* -- Check tracer density positivity -- */
 
-    #if NSCL > 0
-    NSCL_LOOP(nv) {
+    #if NTRACER > 0
+    NTRACER_LOOP(nv) {
         v[nv] = u[nv]*tau;
         if (v[nv] < -1e-6 || u[nv] < -1*g_smallDensity) {
           printLog("! ConsToPrim PVTE_LAW: rho_tr%d = %8.2e", nv-TRC, u[nv]);
@@ -261,8 +261,8 @@ int ConsToPrim (double **ucons, double **uprim, int beg, int end, uint16_t *flag
 
   /* -- Check tracer density positivity -- */
 
-    #if NSCL > 0
-    NSCL_LOOP(nv) {
+    #if NTRACER > 0
+    NTRACER_LOOP(nv) {
         v[nv] = u[nv]*tau;
         if (v[nv] < -1e-6 || u[nv] < -1*g_smallDensity) {
           printLog("! ConsToPrim: rho_tr%d = %8.2e", nv-TRC, u[nv]);
