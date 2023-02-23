@@ -163,8 +163,8 @@ int main (int argc, char *argv[])
   }else if (cmd_line.h5restart == YES){
     RestartFromFile (&data, &runtime, cmd_line.nrestart, DBL_H5_OUTPUT, grd);
   }else if (cmd_line.write){
-    CheckForOutput   (&data, &runtime, tbeg, grd);
     CheckForAnalysis (&data, &runtime, grd);
+    CheckForOutput   (&data, &runtime, tbeg, grd);
   }
 
   if (cmd_line.maxsteps == 0) last_step = 1;
@@ -208,8 +208,8 @@ int main (int argc, char *argv[])
      ---------------------------------------------------- */
      
     if (!first_step && cmd_line.write) {
-      if (!last_step) CheckForOutput  (&data, &runtime, tbeg, grd);
       CheckForAnalysis(&data, &runtime, grd);
+      if (!last_step) CheckForOutput  (&data, &runtime, tbeg, grd);
     }
 
   /* ----------------------------------------------------
@@ -303,8 +303,8 @@ int main (int argc, char *argv[])
 
   /*  Prevent double output when maxsteps == 0 */
   if ((cmd_line.write) && !(cmd_line.maxsteps == 0)){
-    CheckForOutput (&data, &runtime, tbeg, grd);
     CheckForAnalysis (&data, &runtime, grd);
+    CheckForOutput (&data, &runtime, tbeg, grd);
   }
 
   #ifdef PARALLEL
@@ -506,7 +506,7 @@ int Integrate (Data *d, timeStep *Dts, Grid *grid)
 
     DOM_LOOP(k,j,i){
 
-      if (d->flag[k][j][i] & FLAG_NEGATIVE_DENSITY){
+      if (d->flag[k][j][i] & FLAG_CONS2PRIM_FAIL){
         invalid_zones++;
         printLog("> Flagging zone (%d %d %d)\n",i,j,k);
   
@@ -528,7 +528,7 @@ int Integrate (Data *d, timeStep *Dts, Grid *grid)
           d->flag[k+1][j][i] |= FLAG_HLL;)
 
       /* --  Unflag bit for next iteration -- */
-        d->flag[k][j][i] &= ~(FLAG_NEGATIVE_DENSITY);
+        d->flag[k][j][i] &= ~(FLAG_CONS2PRIM_FAIL);
       }
     }
 

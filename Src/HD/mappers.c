@@ -175,7 +175,7 @@ int ConsToPrim (double **ucons, double **uprim, int beg, int end, uint16_t *flag
         )
         v[PRS]   = g_smallPressure;
         flag[i] |= FLAG_CONS2PRIM_FAIL;
-//        ifail    = 1;
+        //ifail    = 1;
       }
       u[ENG] = v[PRS]/gmm1 + kin; /* -- redefine energy -- */
     }
@@ -191,7 +191,7 @@ int ConsToPrim (double **ucons, double **uprim, int beg, int end, uint16_t *flag
         v[PRS]   = g_smallPressure;
         u[ENG]   = v[PRS]/gmm1 + kin; /* -- redefine energy -- */
         flag[i] |= FLAG_CONS2PRIM_FAIL;
-//        ifail    = 1;
+        //ifail    = 1;
       }
       #if ENTROPY_SWITCH
       u[ENTR] = v[PRS]/pow(rho,gmm1);
