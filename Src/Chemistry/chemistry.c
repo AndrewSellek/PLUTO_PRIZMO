@@ -29,6 +29,7 @@ void initialize_Microphysics(Grid *grid)
     irradiation.data_buffer = ARRAY_1D(NX2*NX3, double);
     irradiation.column_density_offset = ARRAY_1D(NX2*NX3, double);
     irradiation.tcpu = ARRAY_3D(NX3_TOT, NX2_TOT, NX1_TOT, double);
+    irradiation.T_dAlessio = ARRAY_3D(NX3_TOT, NX2_TOT, NX1_TOT, double);
 
     for(n = 0; n < NX2 * NX3; ++n)
     {
@@ -61,6 +62,7 @@ void cleanup_Microphysics()
     FreeArray1D((void *) irradiation.data_buffer);
     FreeArray1D((void *) irradiation.column_density_offset);
     FreeArray3D((void *) irradiation.tcpu);
+    FreeArray3D((void *) irradiation.T_dAlessio);
 }
 
 /* ********************************************************************* */
@@ -79,6 +81,7 @@ void Chemistry(Data_Arr v, double dt, Grid *grid, uint16_t ***flag)
     int errState=0;
     double abundance[NTRACER];
     double temperature_cgs, dt_cgs, density_cgs;
+    double sigmoid;
     clock_t t_chem_start, t_chem_end;
 
     irradiation.tchem = 0.0;
@@ -91,8 +94,16 @@ void Chemistry(Data_Arr v, double dt, Grid *grid, uint16_t ***flag)
         #if INTERNAL_BOUNDARY == YES
         if (flag[k][j][i] & FLAG_INTERNAL_BOUNDARY) {	// Ignore cell if flagged as part of internal boundary
     	    if (verboseChem == 1) printLog("!Chemistry: skipping cell (%d,%d,%d) @ step %d\n", i,j,k, g_stepNumber);
+            irradiation.tcpu[k][j][i] = 0.0;
             continue;
         }
+        #if DISABLE_HYDRO == NO
+        if (irradiation.column_density[0][k][j][i] > 100.0*1.0e23) {
+    	    if (verboseChem == 1) printLog("!Chemistry: skipping cell (%d,%d,%d) @ step %d\n", i,j,k, g_stepNumber);
+            irradiation.tcpu[k][j][i] = 0.0;
+            continue;            
+        }
+        #endif
         #endif
 
         // Start timing
@@ -135,11 +146,17 @@ void Chemistry(Data_Arr v, double dt, Grid *grid, uint16_t ***flag)
         prizmo_evolve_rho_c(abundance, &density_cgs, &temperature_cgs, irradiation.jflux[k][j][i], &dt_cgs, &verboseChem, &errState);
         if (errState == 1)
         {
-                printLog("Low temperature %e at (%d,%d,%d)=(%e,%f,%f)\n", temperature_cgs, i, j, k, grid->x[IDIR][i], grid->x[JDIR][j], grid->x[KDIR][k]);
+            printLog("Low temperature %e at (%d,%d,%d)=(%e,%f,%f)\n", temperature_cgs, i, j, k, grid->x[IDIR][i], grid->x[JDIR][j], grid->x[KDIR][k]);
 	    	LogFileFlush();
         }
-        v[PRS][k][j][i] = v[RHO][k][j][i]*temperature_cgs/(KELVIN*g_inputParam[G_MU]);
         NTRACER_LOOP(n) v[n][k][j][i] = abundance[n-TRC];
+        #if INTERNAL_BOUNDARY == YES
+        if (irradiation.column_density[0][k][j][i] > 0.1*1.0e23) {
+            sigmoid = 1.0 / (1.0 + pow(irradiation.column_density[0][k][j][i]*1.0e-23, -2.0));
+            temperature_cgs = sigmoid*irradiation.T_dAlessio[k][j][i] + (1.0-sigmoid)*temperature_cgs;
+        }
+        #endif
+        v[PRS][k][j][i] = v[RHO][k][j][i]*temperature_cgs/(KELVIN*g_inputParam[G_MU]);
 
         // Report success
 	    if (verboseChem == 1)
