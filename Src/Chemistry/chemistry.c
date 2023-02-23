@@ -6,6 +6,7 @@ extern void prizmo_set_vertical_ncol_co_c(double *);
 extern void prizmo_evolve_rho_c(double *, double *, double *, double *, double *, int *, int *);
 extern void prizmo_frac2n_c(double *, double *, double *);
 extern void prizmo_rt_rho_c(double *, double *, double *, double *, double *);
+extern void prizmo_set_solve_thermo_c(int *);
 
 /* ********************************************************************* */
 void initialize_Microphysics(Grid *grid)
@@ -29,7 +30,7 @@ void initialize_Microphysics(Grid *grid)
     irradiation.data_buffer = ARRAY_1D(NX2*NX3, double);
     irradiation.column_density_offset = ARRAY_1D(NX2*NX3, double);
     irradiation.tcpu = ARRAY_3D(NX3_TOT, NX2_TOT, NX1_TOT, double);
-    irradiation.T_dAlessio = ARRAY_3D(NX3_TOT, NX2_TOT, NX1_TOT, double);
+    irradiation.Tfix = ARRAY_3D(NX3_TOT, NX2_TOT, NX1_TOT, double);
 
     for(n = 0; n < NX2 * NX3; ++n)
     {
@@ -62,7 +63,7 @@ void cleanup_Microphysics()
     FreeArray1D((void *) irradiation.data_buffer);
     FreeArray1D((void *) irradiation.column_density_offset);
     FreeArray3D((void *) irradiation.tcpu);
-    FreeArray3D((void *) irradiation.T_dAlessio);
+    FreeArray3D((void *) irradiation.Tfix);
 }
 
 /* ********************************************************************* */
@@ -79,6 +80,7 @@ void Chemistry(Data_Arr v, double dt, Grid *grid, uint16_t ***flag)
     int i, j, k, n;
     int verboseChem=0, prankPrint=-1, kPrint=-1, jPrint=-1, iPrint=-1;
     int errState=0;
+    int solve_thermo = 1;
     double abundance[NTRACER];
     double temperature_cgs, dt_cgs, density_cgs;
     double sigmoid;
@@ -97,13 +99,13 @@ void Chemistry(Data_Arr v, double dt, Grid *grid, uint16_t ***flag)
             irradiation.tcpu[k][j][i] = 0.0;
             continue;
         }
-        #if DISABLE_HYDRO == NO
-        if (irradiation.column_density[0][k][j][i] > 100.0*1.0e23) {
-    	    if (verboseChem == 1) printLog("!Chemistry: skipping cell (%d,%d,%d) @ step %d\n", i,j,k, g_stepNumber);
-            irradiation.tcpu[k][j][i] = 0.0;
-            continue;            
+        //#if DISABLE_HYDRO == NO
+        if (irradiation.column_density[0][k][j][i] > 100.0*irradiation.col_fix) {
+            if (verboseChem == 1) printLog("Flag cell (%d,%d,%d) with cd=%f>%f", i,j,k, irradiation.column_density[0][k][j][i], 100.0*irradiation.col_fix);
+            solve_thermo=0;
         }
-        #endif
+        prizmo_set_solve_thermo_c(&solve_thermo);
+        //#endif
         #endif
 
         // Start timing
@@ -151,9 +153,9 @@ void Chemistry(Data_Arr v, double dt, Grid *grid, uint16_t ***flag)
         }
         NTRACER_LOOP(n) v[n][k][j][i] = abundance[n-TRC];
         #if INTERNAL_BOUNDARY == YES
-        if (irradiation.column_density[0][k][j][i] > 0.1*1.0e23) {
-            sigmoid = 1.0 / (1.0 + pow(irradiation.column_density[0][k][j][i]*1.0e-23, -2.0));
-            temperature_cgs = sigmoid*irradiation.T_dAlessio[k][j][i] + (1.0-sigmoid)*temperature_cgs;
+        if (irradiation.column_density[0][k][j][i] > 0.01*irradiation.col_fix) {
+            sigmoid = 1.0 / (1.0 + pow(irradiation.column_density[0][k][j][i]/irradiation.col_fix, -2.0));
+            temperature_cgs = sigmoid*irradiation.Tfix[k][j][i] + (1.0-sigmoid)*temperature_cgs;
         }
         #endif
         v[PRS][k][j][i] = v[RHO][k][j][i]*temperature_cgs/(KELVIN*g_inputParam[G_MU]);
