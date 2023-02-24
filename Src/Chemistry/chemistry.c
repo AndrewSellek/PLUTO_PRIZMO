@@ -80,7 +80,7 @@ void Chemistry(Data_Arr v, double dt, Grid *grid, uint16_t ***flag)
     int i, j, k, n;
     int verboseChem=0, prankPrint=-1, kPrint=-1, jPrint=-1, iPrint=-1;
     int errState=0;
-    int solve_thermo = 1;
+    int solve_thermo=1;
     double abundance[NTRACER];
     double temperature_cgs, dt_cgs, density_cgs;
     double sigmoid;
@@ -90,6 +90,7 @@ void Chemistry(Data_Arr v, double dt, Grid *grid, uint16_t ***flag)
 
     DOM_LOOP(k, j, i){
         // Determine if verbose
+	    verboseChem = 0;  // First reset
 	    if (prank == prankPrint && k == kPrint && j == jPrint && i==iPrint) verboseChem = 1;
 
         // Skip internal boundary cells
@@ -99,13 +100,11 @@ void Chemistry(Data_Arr v, double dt, Grid *grid, uint16_t ***flag)
             irradiation.tcpu[k][j][i] = 0.0;
             continue;
         }
-        //#if DISABLE_HYDRO == NO
         if (irradiation.column_density[0][k][j][i] > 100.0*irradiation.col_fix) {
             if (verboseChem == 1) printLog("Flag cell (%d,%d,%d) with cd=%f>%f", i,j,k, irradiation.column_density[0][k][j][i], 100.0*irradiation.col_fix);
             solve_thermo=0;
         }
         prizmo_set_solve_thermo_c(&solve_thermo);
-        //#endif
         #endif
 
         // Start timing
@@ -155,10 +154,12 @@ void Chemistry(Data_Arr v, double dt, Grid *grid, uint16_t ***flag)
         #if INTERNAL_BOUNDARY == YES
         if (irradiation.column_density[0][k][j][i] > 0.01*irradiation.col_fix) {
             sigmoid = 1.0 / (1.0 + pow(irradiation.column_density[0][k][j][i]/irradiation.col_fix, -2.0));
+            if (verboseChem == 1) printLog("Tfix=%e, Tcgs=%e, cdTot=%e, sigmoid=%e\n", irradiation.Tfix[k][j][i], temperature_cgs, irradiation.column_density[0][k][j][i], sigmoid);
             temperature_cgs = sigmoid*irradiation.Tfix[k][j][i] + (1.0-sigmoid)*temperature_cgs;
         }
         #endif
-        v[PRS][k][j][i] = v[RHO][k][j][i]*temperature_cgs/(KELVIN*g_inputParam[G_MU]);
+        v[PRS][k][j][i] = v[RHO][k][j][i]*temperature_cgs/(KELVIN*g_inputParam[G_MU]);        
+        if (verboseChem == 1) printLog("tcgs=%e, v[PRS]=%e\n", temperature_cgs, v[PRS][k][j][i]);
 
         // Report success
 	    if (verboseChem == 1)
