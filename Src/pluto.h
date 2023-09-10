@@ -509,6 +509,10 @@
  #define FORCE_FIRST_DT    NO
 #endif
 
+#ifndef PREATTENUATION
+ #define PREATTENUATION    NO
+#endif
+
 /* ********************************************************
     Set HAVE_ENERGY to YES if an energy equation exists
    ******************************************************** */

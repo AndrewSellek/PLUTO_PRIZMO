@@ -59,6 +59,7 @@ void UpdateStage(Data *d, Data_Arr Uc, Data_Arr Us, double **aflux,
   State *stateR = &(sweep.stateR);
 
   double *inv_dl, dl2;
+  double Dt_cell;
   static double ***C_dt;
   RBox  sweepBox;
 
@@ -287,7 +288,11 @@ CheckNaN (stateR->v, nbeg, nend, "StateR->v");
       #else
       inv_dl = GetInverse_dl(grid);
       for ((*ip) = nbeg-1; (*ip) <= nend; (*ip)++) { 
-        Dts->invDt_hyp = MAX(Dts->invDt_hyp, Dts->cmax[*ip]*inv_dl[*ip]);
+        Dt_cell = Dts->cmax[*ip]*inv_dl[*ip];
+        #if INTERNAL_BOUNDARY == YES
+        if (sweep.flag[*ip] & FLAG_INTERNAL_BOUNDARY) Dt_cell = 0.0;
+        #endif
+        Dts->invDt_hyp = MAX(Dts->invDt_hyp, Dt_cell);
       }
       #endif
     }

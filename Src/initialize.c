@@ -540,7 +540,7 @@ void Initialize(Data *data, Runtime *runtime, Grid *grid, cmdLine *cmd_line)
       in case output requires writing the residual.
    ---------------------------------------------- */
 
-  Startup (data, grid);
+  Startup (data, grid, runtime->output_dir);
 
 #if (PARTICLES != NO)
   if (cmd_line->prestart == NO) Particles_Set(data, grid); 

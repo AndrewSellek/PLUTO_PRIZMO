@@ -106,6 +106,16 @@ int main (int argc, char *argv[])
   LogFileFlush();
 
 /* --------------------------------------------------------
+   0f. Initialize chemistry
+   ----------------------------------------------------- */
+
+#if CHEMISTRY != NO
+  printLog ("> Initialize PRIZMO... \n\n"); 
+  LogFileFlush(); 
+  prizmo_init_c();
+#endif
+
+/* --------------------------------------------------------
    0c. Initialize parallel environment, grid, memory
        allocation.
    -------------------------------------------------------- */
@@ -139,16 +149,6 @@ int main (int argc, char *argv[])
   g_stepNumber = 0;
 
 /* --------------------------------------------------------
-   0f. Initialize chemistry
-   ----------------------------------------------------- */
-
-#if CHEMISTRY != NO
-  printLog ("> Initialize PRIZMO... \n\n"); 
-  LogFileFlush(); 
-  prizmo_init_c();
-#endif
-
-/* --------------------------------------------------------
    0e. Check if restart is necessary. 
        If not, write initial condition to disk.
    ------------------------------------------------------- */
@@ -163,8 +163,8 @@ int main (int argc, char *argv[])
   }else if (cmd_line.h5restart == YES){
     RestartFromFile (&data, &runtime, cmd_line.nrestart, DBL_H5_OUTPUT, grd);
   }else if (cmd_line.write){
-    CheckForOutput   (&data, &runtime, tbeg, grd);
     CheckForAnalysis (&data, &runtime, grd);
+    CheckForOutput   (&data, &runtime, tbeg, grd);
   }
 
   if (cmd_line.maxsteps == 0) last_step = 1;
@@ -208,8 +208,8 @@ int main (int argc, char *argv[])
      ---------------------------------------------------- */
      
     if (!first_step && cmd_line.write) {
-      if (!last_step) CheckForOutput  (&data, &runtime, tbeg, grd);
       CheckForAnalysis(&data, &runtime, grd);
+      if (!last_step) CheckForOutput  (&data, &runtime, tbeg, grd);
     }
 
   /* ----------------------------------------------------
@@ -268,9 +268,11 @@ int main (int argc, char *argv[])
     if (g_stepNumber%runtime.log_freq == 0) {
       scrh = (double)(clock_end - clock_beg)/CLOCKS_PER_SEC;
       print ("%s [clock (total)         = %f (s)]\n",IndentString(), scrh);
+#if (CHEMISTRY == YES)
       print ("%s [clock (chemistry)     = %f (s)]\n",IndentString(), irradiation.tchem);
       print ("%s [clock (attenuation)   = %f (s)]\n",IndentString(), irradiation.tatten);
       print ("%s [clock (coldens)       = %f (s)]\n",IndentString(), irradiation.tcoldens);
+#endif
       print ("%s [clock (AdvanceStep()) = %f (s)]\n",IndentString(), Dts.clock_hyp);
       #if PARTICLES
       print ("%s [clock (particles)     = %f (s)]\n",IndentString(), Dts.clock_particles);
@@ -303,8 +305,8 @@ int main (int argc, char *argv[])
 
   /*  Prevent double output when maxsteps == 0 */
   if ((cmd_line.write) && !(cmd_line.maxsteps == 0)){
-    CheckForOutput (&data, &runtime, tbeg, grd);
     CheckForAnalysis (&data, &runtime, grd);
+    CheckForOutput (&data, &runtime, tbeg, grd);
   }
 
   #ifdef PARALLEL
@@ -459,12 +461,13 @@ int Integrate (Data *d, timeStep *Dts, Grid *grid)
 /* --------------------------------------------------------
    3. Perform Strang Splitting between hydro and source
    -------------------------------------------------------- */
+  if (nretry == 0) TOT_LOOP(k,j,i) d->flag[k][j][i] = 0;
 
 #if (DISABLE_HYDRO == YES) && (CHEMISTRY == YES)
   Boundary(d, ALL_DIR, grid);
-  Chemistry(d->Vc, g_dt, grid);
+  Chemistry(d->Vc, g_dt, grid, d->flag);
+  CheckData((Data*)d, grid, "After Chemistry");
 #elif (DISABLE_HYDRO == NO)
-  if (nretry == 0) TOT_LOOP(k,j,i) d->flag[k][j][i] = 0;
 
   #ifdef FARGO
   FARGO_AverageVelocity(d, grid);
@@ -505,7 +508,7 @@ int Integrate (Data *d, timeStep *Dts, Grid *grid)
 
     DOM_LOOP(k,j,i){
 
-      if (d->flag[k][j][i] & FLAG_NEGATIVE_DENSITY){
+      if (d->flag[k][j][i] & FLAG_CONS2PRIM_FAIL){
         invalid_zones++;
         printLog("> Flagging zone (%d %d %d)\n",i,j,k);
   
@@ -527,7 +530,7 @@ int Integrate (Data *d, timeStep *Dts, Grid *grid)
           d->flag[k+1][j][i] |= FLAG_HLL;)
 
       /* --  Unflag bit for next iteration -- */
-        d->flag[k][j][i] &= ~(FLAG_NEGATIVE_DENSITY);
+        d->flag[k][j][i] &= ~(FLAG_CONS2PRIM_FAIL);
       }
     }
 
@@ -896,6 +899,6 @@ void CheckForAnalysis (Data *d, Runtime *runtime, Grid *grid)
   check_dn = (g_stepNumber%runtime->anl_dn) == 0;
   check_dn = check_dn && (runtime->anl_dn > 0);
 
-  if (check_dt || check_dn) Analysis (d, grid);
+  if (check_dt || check_dn) Analysis (d, grid, runtime->output_dir);
 }
 

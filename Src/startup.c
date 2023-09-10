@@ -19,7 +19,7 @@
 double FieldAverage(double, double, Grid *, int, int);
 
 /* ********************************************************************* */
-void Startup (Data *d, Grid *grid)
+void Startup (Data *d, Grid *grid, char *output_dir)
 /*! 
  *
  *
@@ -193,7 +193,7 @@ void Startup (Data *d, Grid *grid)
       alternative to the pointwise initialization.
    -------------------------------------------------------- */
 
-  InitDomain(d, grid);
+  InitDomain(d, grid, output_dir);
 
 /* --------------------------------------------------------
    3. Assign magnetic field from vector potential.

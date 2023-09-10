@@ -15,7 +15,7 @@
 
 void   initialize_Microphysics(Grid *grid);
 void   cleanup_Microphysics();
-void   Chemistry(Data_Arr v, double dt, Grid *grid);
+void   Chemistry(Data_Arr v, double dt, Grid *grid, uint16_t ***flag);
 void   find_CommunicationNeighbour(int current_rank, LocalDomainInfo *domain_info_array, int nproc, CommunicationNeighbour* cn);
 void   find_CommunicationNeighbours(Grid *grid);
 void   calculate_Attenuation_perDomain(Data_Arr v, Grid *grid);
