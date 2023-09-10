@@ -284,7 +284,7 @@ void calculate_Attenuation(Data_Arr v, Grid *grid)
  * Calculate radiation attenuation in the whole domain calling PRIZMO.
  * 
  * WARNING: this calculation needs to be run in serial over the radial 
- * direction since each domain has to know the attenutation at its inner 
+ * direction since each domain has to know the attenuation at its inner 
  * radial boundary before starting.
  *
  * TODO: restrict this calculation only for spherical coordinates.
