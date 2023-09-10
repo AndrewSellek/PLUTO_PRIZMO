@@ -565,7 +565,7 @@ class pload(object):
 			dataext=".vtk"
 		elif self.datatype == 'hdf5':
 			dtype = 'd'
-			dataext = '.hdf5'
+			dataext = '.dbl.h5' #'.hdf5'
 			nstr = num
 			varfile = self.wdir+"data."+nstr+dataext
 		else:
@@ -605,4 +605,23 @@ class pload(object):
 			sys.exit()
 
 		return ddict
+
+def ReadSimTime(timefile, datatype, ns):
+	""" 
+	Read time info from the outfiles.
+	**Inputs**:
+		timefile -- name of the out file which has timing information.
+	"""
+	if datatype == 'hdf5':
+		fh5 = h5.File(timefile,'r')
+		SimTime = fh5.attrs.get('time')
+		fh5.close()
+	else:
+		f_var = open(timefile, "r")
+		tlist = []
+		for line in f_var.readlines():
+			tlist.append(line.split())
+		SimTime = float(tlist[ns][1])
+
+	return SimTime
 
