@@ -513,6 +513,10 @@
  #define PREATTENUATION    NO
 #endif
 
+#ifndef READFULLCHEM
+ #define READFULLCHEM    NO
+#endif
+
 /* ********************************************************
     Set HAVE_ENERGY to YES if an energy equation exists
    ******************************************************** */
