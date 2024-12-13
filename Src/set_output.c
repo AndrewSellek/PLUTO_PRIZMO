@@ -154,9 +154,11 @@ void SetOutput (Data *d, Runtime *runtime)
 
     for (i = 0; i < runtime->user_var; i++){
       strcpy (output->var_name[i + nv], runtime->user_var_name[i]);
+      printLog("! SetOutput(): uservar %d/%d is '%s'\n", i+1, runtime->user_var, runtime->user_var_name[i]);
       output->V[i + nv] = d->Vuser[i];
       output->stag_var[i + nv] = -1; /* -- assume cell-centered -- */
     }
+    LogFileFlush();
 
   /* -- Update total number of variables -- */
 

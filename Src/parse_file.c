@@ -62,7 +62,7 @@ int ParamFileRead (char *fname)
   char  sline[512];
   FILE *fp;
 
-  if (fline == NULL) fline = ARRAY_2D(128,128,char);
+  if (fline == NULL) fline = ARRAY_2D(256,256,char);
 
   fp = fopen(fname,"r");
   if (fp == NULL) {
@@ -104,8 +104,8 @@ char *ParamFileGet (const char *label, int pos)
     empty words.
    ------------------------------------------------------------- */
 
-  if (words == NULL) words = ARRAY_2D(128,128,char);
-  for (k = 0; k < 127; k++) sprintf (words[k],"\0");
+  if (words == NULL) words = ARRAY_2D(256,256,char);
+  for (k = 0; k < 255; k++) sprintf (words[k],"\0");
 
   for (k = 0; k < nlines; k++) {        /* Loop over lines */
     nwords = ParamFileGetWords(fline[k],words);  /* get words for k-th line */
@@ -140,7 +140,7 @@ int ParamFileHasBoth (const char *label1, const char *label2)
   int         k, nwords, nw;
   static char **words;
 
-  if (words == NULL) words = ARRAY_2D(128,128,char);
+  if (words == NULL) words = ARRAY_2D(256,256,char);
 
   for (k = 0; k < nlines; k++) {                /* Loop over lines */
     nwords = ParamFileGetWords(fline[k],words); /* get words for k-th line */
