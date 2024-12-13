@@ -25,6 +25,7 @@
 
 #define YES        1
 #define NO         0
+#define MAYBE      2
 #define DEFAULT   -1
 #define TRUE       YES
 #define FALSE      NO
@@ -515,6 +516,10 @@
 
 #ifndef READFULLCHEM
  #define READFULLCHEM    NO
+#endif
+
+#ifndef RADIUSTRACERS
+ #define RADIUSTRACERS    NO
 #endif
 
 /* ********************************************************
