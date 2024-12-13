@@ -44,6 +44,7 @@ objs += prizmo_cooling.o
 objs += prizmo_ode.o
 objs += prizmo_attenuate.o
 objs += prizmo_core.o
+objs += prizmo_lines_atomic.o
 objs += prizmo.o
 objs += prizmo_c.o
 
